@@ -17,6 +17,7 @@ model User {
   id           Int           @id @default(autoincrement()) // Or use String with cuid() if you want UUID
   name         String
   email        String        @unique
+  password     String
   avatar       String?       // Optional URL
   timeZone     String
   preferences  Json?         // JSON user preferences (working hours, etc.)
