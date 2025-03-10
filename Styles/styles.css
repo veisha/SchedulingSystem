@@ -1,0 +1,70 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f0f0f0;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: 200px 1fr; /* Sidebar width: 200px, rest for header and content */
+    grid-template-rows: auto 1fr; /* Header height: auto, rest for content */
+    grid-template-areas:
+        "sidebar header"
+        "sidebar content";
+    width: 100%;
+    height: 100%;
+    /* max-width: 1200px; Optional: Limit container width */
+    border: 2px solid #000; /* Optional: Border for the container */
+}
+
+.header {
+    grid-area: header;
+    background-color: #f4f4f4;
+    border: 2px solid #ff0000; /* Red border */
+    padding: 10px;
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.sidebar {
+    grid-area: sidebar;
+    background-color: #f4f4f4;
+    border: 2px solid #00ff00; /* Green border */
+    padding: 10px;
+}
+
+.content {
+    grid-area: content;
+    background-color: #f4f4f4;
+    border: 2px solid #0000ff; /* Blue border */
+    padding: 10px;
+}
+
+/* Hide the sidebar */
+.sidebar.hidden {
+    display: none;
+}
+
+/* Adjust the grid when the sidebar is hidden */
+.container.hidden-sidebar {
+    grid-template-columns: 1fr; /* Only one column (header and content) */
+    grid-template-areas:
+        "header"
+        "content";
+}
+
+/* Style the toggle button */
+button {
+    position: absolute;
+    transform: translateY(-50%); /* Center vertically */
+    font-size: 16px;
+    cursor: pointer;
+    background-color: #f4f4f4;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
