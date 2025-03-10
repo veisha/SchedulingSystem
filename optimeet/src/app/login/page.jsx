@@ -1,44 +1,55 @@
-import { getCsrfToken, signIn } from "next-auth/react";
+"use client";
+
+import { signIn } from "next-auth/react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Login() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     const res = await signIn("credentials", {
       redirect: false,
       email,
-      password
+      password,
     });
 
-    if (res.error) {
-      setError(res.error);
+    console.log(res);
+
+    if (res?.error) {
+      setError("Invalid email or password");
     } else {
-      window.location.href = "/dashboard"; // after login success
+      router.push("/dashboard"); // ✅ Redirect after successful login
     }
   };
 
   return (
-    <div className="login-container">
-      <h1>Login</h1>
+    <div>
+      <h1>Login Page</h1>
       <form onSubmit={handleSubmit}>
         <input
           type="email"
-          placeholder="Email"
+          value={email}
           onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email"
           required
         />
         <input
           type="password"
-          placeholder="Password"
+          value={password}
           onChange={(e) => setPassword(e.target.value)}
+          placeholder="Password"
           required
         />
-        <button type="submit">Login</button>
-        {error && <p className="error">{error}</p>}
+        <button type="submit">Sign In</button>
+
+        {/* Show error message if login fails */}
+        {error && <p style={{ color: "red" }}>{error}</p>}
       </form>
     </div>
   );
