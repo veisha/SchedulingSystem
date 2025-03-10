@@ -1,0 +1,85 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int           @id @default(autoincrement()) // Or use String with cuid() if you want UUID
+  name         String
+  email        String        @unique
+  avatar       String?       // Optional URL
+  timeZone     String
+  preferences  Json?         // JSON user preferences (working hours, etc.)
+  
+  schedules             Schedule[]
+  sentAppointmentRequests     AppointmentRequest[] @relation("SentRequests")
+  receivedAppointmentRequests AppointmentRequest[] @relation("ReceivedRequests")
+
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model Schedule {
+  id            Int       @id @default(autoincrement()) // Or use String with cuid() if you want UUID
+  user          User      @relation(fields: [userId], references: [id])
+  userId        Int
+
+  type          ScheduleType
+  title         String
+  description   String?
+  startDateTime DateTime
+  endDateTime   DateTime
+  isAllDay      Boolean     @default(false)
+  repeat        Json?       // Can hold complex repeat rules (None, Daily, Weekly, etc.)
+  status        ScheduleStatus @default(CONFIRMED)
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model AppointmentRequest {
+  id            Int       @id @default(autoincrement()) // Or use String with cuid() if you want UUID
+
+  sender        User      @relation("SentRequests", fields: [senderId], references: [id])
+  senderId      Int
+
+  receiver      User      @relation("ReceivedRequests", fields: [receiverId], references: [id])
+  receiverId    Int
+
+  proposedTimes Json      // Array of proposed time slots
+  selectedTime  DateTime? // Chosen confirmed time (optional until accepted)
+  status        AppointmentStatus @default(PENDING)
+  message       String?
+
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+enum ScheduleType {
+  TASK
+  APPOINTMENT
+  RESTDAY
+  BLOCK
+}
+
+enum ScheduleStatus {
+  CONFIRMED
+  PENDING
+  CANCELLED
+}
+
+enum AppointmentStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
