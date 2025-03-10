@@ -1,55 +1,70 @@
-"use client";
+'use client';
 
-import { signIn } from "next-auth/react";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { signIn, useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import styles from './Login.module.css'; // Assuming you have a Login.module.css
 
-export default function Login() {
+export default function LoginPage() {
+  const { data: session } = useSession(); // relies on the top-level <SessionProvider>
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
+  const [form, setForm] = useState({ email: '', password: '' });
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (session) {
+      router.push('/dashboard');
+    }
+  }, [session, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const res = await signIn("credentials", {
+    const res = await signIn('credentials', {
       redirect: false,
-      email,
-      password,
+      email: form.email,
+      password: form.password,
     });
 
-    console.log(res);
-
-    if (res?.error) {
-      setError("Invalid email or password");
+    if (res.error) {
+      setError('Invalid email or password');
     } else {
-      router.push("/dashboard"); // ✅ Redirect after successful login
+      router.push('/dashboard');
     }
   };
 
   return (
-    <div>
-      <h1>Login Page</h1>
-      <form onSubmit={handleSubmit}>
+    <div className={styles.container}>
+      <form onSubmit={handleSubmit} className={styles.form}>
+        <h1 className={styles.title}>Login</h1>
+
+        {error && <div className={styles.error}>{error}</div>}
+
         <input
           type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
           placeholder="Email"
+          className={styles.input}
+          value={form.email}
+          onChange={(e) => setForm({ ...form, email: e.target.value })}
           required
         />
+
         <input
           type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
           placeholder="Password"
+          className={styles.input}
+          value={form.password}
+          onChange={(e) => setForm({ ...form, password: e.target.value })}
           required
         />
-        <button type="submit">Sign In</button>
 
-        {/* Show error message if login fails */}
-        {error && <p style={{ color: "red" }}>{error}</p>}
+        <button type="submit" className={styles.button}>Sign In</button>
+
+        <p className={styles.text}>
+          Don&apos;t have an account?{' '}
+          <a href="/register" className={styles.link}>Register</a>
+        </p>
       </form>
     </div>
   );

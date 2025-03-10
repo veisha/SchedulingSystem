@@ -1,5 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
+import Link from "next/link";
+import styles from "./Register.module.css"; // Import your CSS module here!
 
 export default function Register() {
   const [form, setForm] = useState({
@@ -12,7 +14,6 @@ export default function Register() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // Automatically get user's time zone on component mount
   useEffect(() => {
     const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     setForm((prev) => ({ ...prev, timeZone: userTimeZone }));
@@ -24,8 +25,8 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(""); // Clear previous error
-    setSuccess(""); // Clear previous success
+    setError("");
+    setSuccess("");
 
     try {
       const res = await fetch("/api/register", {
@@ -37,7 +38,6 @@ export default function Register() {
       const data = await res.json();
 
       if (!res.ok) {
-        // Show specific error message from API response if available
         setError(data.error || "Something went wrong!");
       } else {
         setSuccess("Account created! You can now log in.");
@@ -45,7 +45,7 @@ export default function Register() {
           name: "",
           email: "",
           password: "",
-          timeZone: form.timeZone // Keep the timeZone
+          timeZone: form.timeZone
         });
       }
     } catch (err) {
@@ -55,40 +55,51 @@ export default function Register() {
   };
 
   return (
-    <div className="register-container">
-      <h1>Register</h1>
+    <div className={styles.container}>
+      <div className={styles.formBox}>
+        <h1 className={styles.title}>Register</h1>
 
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          name="name"
-          placeholder="Full Name"
-          value={form.name}
-          onChange={handleChange}
-          required
-        />
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          value={form.email}
-          onChange={handleChange}
-          required
-        />
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          value={form.password}
-          onChange={handleChange}
-          required
-        />
+        <form onSubmit={handleSubmit} className={styles.form}>
+          <input
+            type="text"
+            name="name"
+            placeholder="Full Name"
+            value={form.name}
+            onChange={handleChange}
+            required
+            className={styles.input}
+          />
 
-        <button type="submit">Register</button>
+          <input
+            type="email"
+            name="email"
+            placeholder="Email"
+            value={form.email}
+            onChange={handleChange}
+            required
+            className={styles.input}
+          />
 
-        {error && <p className="error" style={{ color: "red" }}>{error}</p>}
-        {success && <p className="success" style={{ color: "green" }}>{success}</p>}
-      </form>
+          <input
+            type="password"
+            name="password"
+            placeholder="Password"
+            value={form.password}
+            onChange={handleChange}
+            required
+            className={styles.input}
+          />
+
+          <button type="submit" className={styles.button}>Register</button>
+
+          {error && <p className={styles.error}>{error}</p>}
+          {success && <p className={styles.success}>{success}</p>}
+
+          <p className={styles.footer}>
+            Already have an account? <Link href="/login">Login</Link>
+          </p>
+        </form>
+      </div>
     </div>
   );
 }
