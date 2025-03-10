@@ -23,8 +23,8 @@ body {
 
 .header {
     grid-area: header;
-    background-color: #f4f4f4;
-    border: 2px solid #ff0000; /* Red border */
+    background-color: #899878;
+    color: white;
     padding: 10px;
     text-align: center;
     font-size: 24px;
@@ -33,15 +33,14 @@ body {
 
 .sidebar {
     grid-area: sidebar;
-    background-color: #f4f4f4;
-    border: 2px solid #00ff00; /* Green border */
+    background-color: #222725;
     padding: 10px;
+    color: white;
 }
 
 .content {
     grid-area: content;
-    background-color: #f4f4f4;
-    border: 2px solid #0000ff; /* Blue border */
+    background-color: #F7F7F2; /* Blue border */
     padding: 10px;
 }
 
