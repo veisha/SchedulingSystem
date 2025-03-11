@@ -1,0 +1,85 @@
+/* Dashboard.module.css */
+
+/* Global resets (can be moved to globals.css if desired) */
+:global(html),
+:global(body) {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  height: 100%;
+  width: 100%;
+}
+
+:global(body) {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #f0f0f0;
+}
+
+/* Container Grid Layout */
+.container {
+  display: grid;
+  grid-template-columns: 200px 1fr; /* Sidebar + content */
+  grid-template-rows: auto 1fr; /* Header + content */
+  grid-template-areas:
+    "sidebar header"
+    "sidebar content";
+  width: 100%;
+  height: 100vh; /* Full viewport height */
+  border: 2px solid #000;
+}
+
+/* Header Styling */
+.header {
+  grid-area: header;
+  background-color: #899878;
+  color: white;
+  padding: 10px;
+  text-align: center;
+  font-size: 24px;
+  font-weight: bold;
+  position: relative;
+}
+
+/* Sidebar Styling */
+.sidebar {
+  grid-area: sidebar;
+  background-color: #222725;
+  padding: 10px;
+  color: white;
+}
+
+/* Content Styling */
+.content {
+  grid-area: content;
+  background-color: #f7f7f2;
+  padding: 10px;
+  color: #000;
+}
+
+/* Hide the sidebar */
+.hidden {
+  display: none;
+}
+
+/* Adjust container grid when sidebar is hidden */
+.hiddenSidebar {
+  grid-template-columns: 1fr;
+  grid-template-areas:
+    "header"
+    "content";
+}
+
+/* Toggle button styles */
+.header button {
+  position: absolute;
+  transform: translateY(-50%);
+  font-size: 16px;
+  cursor: pointer;
+  background-color: #f4f4f4;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  color: #000;
+  width: 20px;
+  height: 20px;
+}
