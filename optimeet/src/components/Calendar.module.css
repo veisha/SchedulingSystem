@@ -130,38 +130,97 @@
   background-color: #ffeb3b; /* Yellow highlight */
   font-weight: bold;
 }
-  /* ===============================
-     WEEK VIEW
-     =============================== */
-  .weekView {
+/* ===============================
+   WEEK VIEW
+   =============================== */
+   .weekView {
     width: 100%;
     height: 100%;
     display: flex;
     flex-direction: column;
   }
   
+  .weekViewHeader {
+    padding: 1rem; /* 16px */
+    background-color: #f4f4f4; /* Light gray background */
+    border-bottom: 1px solid #ccc; /* Separator line */
+    text-align: center;
+  }
+  
+  .weekViewHeader h2 {
+    margin: 0;
+    font-size: 1.5rem; /* 24px */
+    color: #333;
+  }
+  
+  .navigationButtons {
+    margin-top: 0.5rem; /* 8px */
+  }
+  
+  .navigationButtons button {
+    padding: 0.5rem 1rem; /* 8px 16px */
+    margin: 0 0.5rem; /* 8px */
+    background-color: #4f46e5;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .navigationButtons button:hover {
+    background-color: #4338ca;
+  }
+  
   .weekHeader {
     display: flex;
+    border-bottom: 0.0625rem solid black; /* 1px */
   }
   
   .timeColumnHeader {
-    width: 5rem;
+    width: 5rem; /* 80px - Same as timeColumn */
+    border-right: 0.0625rem solid black; /* 1px - Match the border */
+    background-color: #f4f4f4; /* Match the header background */
   }
   
   .dayHeader {
-    flex-grow: 1;
+    flex: 1; /* Distribute space evenly */
+    min-width: 0; /* Allow text to truncate if necessary */
     text-align: center;
-    padding: 0.5rem 0;          /* 8px 0 */
-    border-bottom: 0.0625rem solid black;
+    padding: 0.5rem 0; /* 8px 0 */
+    border-right: 0.0625rem solid black; /* 1px - Add border between days */
     color: black;
+    overflow: hidden; /* Prevent text from overflowing */
+    white-space: nowrap; /* Keep text in a single line */
+    text-overflow: ellipsis; /* Add ellipsis if text overflows */
+  }
+  
+  .dayHeader:last-child {
+    border-right: none; /* Remove border for the last day */
+  }
+  
+  .currentDay {
+    background-color: #ffeb3b; /* Yellow highlight */
+    font-weight: bold;
   }
   
   .weekBody {
     display: flex;
   }
   
-  .weekBody .timeColumn {
-    width: 5rem;
+  .timeColumn {
+    width: 5rem; /* 80px */
+    border-right: 0.0625rem solid black; /* 1px - Match the border */
+    background-color: #f4f4f4; /* Match the header background */
+  }
+  
+  .timeSlot {
+    height: 2.5rem; /* 40px */
+    border-bottom: 0.0625rem solid black; /* 1px */
+    text-align: right;
+    padding-right: 0.3125rem; /* 5px */
+    font-size: 0.75rem; /* 12px */
+    color: black;
   }
   
   .daysColumns {
@@ -170,82 +229,158 @@
   }
   
   .dayColumn {
-    flex-grow: 1;
-    border-left: 0.0625rem solid black;
+    flex: 1; /* Distribute space evenly */
+    min-width: 0; /* Allow content to fit within the column */
+    border-right: 0.0625rem solid black; /* 1px - Add border between days */
+  }
+  
+  .dayColumn:last-child {
+    border-right: none; /* Remove border for the last day */
   }
   
   .dayColumn .eventSlot {
-    height: 2.5rem;
-    border-bottom: 0.0625rem solid black;
+    height: 2.5rem; /* 40px */
+    border-bottom: 0.0625rem solid black; /* 1px */
   }
   
-  /* ===============================
-     MONTH VIEW
-     =============================== */
-  .monthView {
-    width: 100%;
-    height: 100%;
-    text-align: center;
-  }
-  
-  .monthHeader {
-    margin-bottom: 0.625rem;    /* 10px */
-  }
-  
-  .monthGrid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 0.3125rem;             /* 5px */
-  }
-  
-  .monthGridHeader {
-    font-weight: bold;
-    background-color: #f4f4f4;
-    padding: 0.3125rem 0;       /* 5px 0 */
-    color: black;
-  }
-  
-  .monthGridCell {
-    border: 0.0625rem solid black;
-    min-height: 3.75rem;        /* 60px */
-    padding: 0.3125rem;         /* 5px */
-    color: black;
-  }
-  
-  /* ===============================
-     YEAR VIEW
-     =============================== */
-  .yearView {
-    width: 100%;
-    height: 100%;
-    text-align: center;
-  }
-  
-  .yearView h2{
-    color: black;
-  }
+ /* ===============================
+   MONTH VIEW
+   =============================== */
+.monthView {
+  width: 100%;
+  height: 100%;
+  text-align: center;
+}
 
+.monthHeader {
+  margin-bottom: 0.625rem; /* 10px */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.monthHeader h2 {
+  margin: 0;
+  font-size: 1.5rem; /* 24px */
+  color: #333;
+}
+
+.navigationButtons {
+  margin-top: 0.5rem; /* 8px */
+}
+
+.navigationButtons button {
+  padding: 0.5rem 1rem; /* 8px 16px */
+  margin: 0 0.5rem; /* 8px */
+  background-color: #4f46e5;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.navigationButtons button:hover {
+  background-color: #4338ca;
+}
+
+.monthGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.3125rem; /* 5px */
+}
+
+.monthGridHeader {
+  font-weight: bold;
+  background-color: #f4f4f4;
+  padding: 0.3125rem 0; /* 5px 0 */
+  color: black;
+}
+
+.monthGridCell {
+  border: 0.0625rem solid black; /* 1px */
+  min-height: 3.75rem; /* 60px */
+  padding: 0.3125rem; /* 5px */
+  color: black;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.currentDay {
+  background-color: #ffeb3b; /* Yellow highlight */
+  font-weight: bold;
+}
+  
+/* ===============================
+   YEAR VIEW
+   =============================== */
+   .yearView {
+    width: 100%;
+    height: 100%;
+    text-align: center;
+  }
+  
+  .yearViewHeader {
+    margin-bottom: 0.625rem; /* 10px */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .yearViewHeader h2 {
+    margin: 0;
+    font-size: 1.5rem; /* 24px */
+    color: #333;
+  }
+  
+  .navigationButtons {
+    margin-top: 0.5rem; /* 8px */
+  }
+  
+  .navigationButtons button {
+    padding: 0.5rem 1rem; /* 8px 16px */
+    margin: 0 0.5rem; /* 8px */
+    background-color: #4f46e5;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .navigationButtons button:hover {
+    background-color: #4338ca;
+  }
+  
   .yearGrid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 0.625rem;              /* 10px */
+    gap: 0.625rem; /* 10px */
   }
   
   .yearMonth {
-    border: 0.0625rem solid black;
-    padding: 0.3125rem;         /* 5px */
+    border: 0.0625rem solid black; /* 1px */
+    padding: 0.3125rem; /* 5px */
     color: black;
   }
   
   .yearMonthGrid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 0.125rem;              /* 2px */
+    gap: 0.125rem; /* 2px */
   }
   
   .yearMonthCell {
-    border: 0.0625rem solid black;
-    min-height: 1.25rem;        /* 20px */
-    font-size: 0.625rem;        /* 10px */
+    border: 0.0625rem solid black; /* 1px */
+    min-height: 1.25rem; /* 20px */
+    font-size: 0.625rem; /* 10px */
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   
+  .currentDay {
+    background-color: #ffeb3b; /* Yellow highlight */
+    font-weight: bold;
+  }

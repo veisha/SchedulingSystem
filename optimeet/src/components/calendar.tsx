@@ -122,16 +122,77 @@ const Calendar: React.FC = () => {
   const renderWeekView = () => {
     const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     const hours = Array.from({ length: 24 }, (_, i) => i);
+  
+    // Get the start of the week (Sunday)
+    const startOfWeek = new Date(currentDate);
+    startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
+  
+    // Format the week range (e.g., "Oct 23 - Oct 29")
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    const weekRange = `${startOfWeek.toLocaleString("default", {
+      month: "short",
+      day: "numeric",
+    })} - ${endOfWeek.toLocaleString("default", { month: "short", day: "numeric" })}`;
+  
+    // Check if a given date is the current day
+    const isCurrentDay = (date: Date) => {
+      const today = new Date();
+      return (
+        date.getDate() === today.getDate() &&
+        date.getMonth() === today.getMonth() &&
+        date.getFullYear() === today.getFullYear()
+      );
+    };
+  
+    // Navigate to the previous week
+    const goToPreviousWeek = () => {
+      const newDate = new Date(currentDate);
+      newDate.setDate(newDate.getDate() - 7);
+      setCurrentDate(newDate);
+    };
+  
+    // Navigate to the next week
+    const goToNextWeek = () => {
+      const newDate = new Date(currentDate);
+      newDate.setDate(newDate.getDate() + 7);
+      setCurrentDate(newDate);
+    };
+  
     return (
       <div className={styles.weekView}>
+        {/* Header for Week View */}
+        <div className={styles.weekViewHeader}>
+          <h2>{weekRange}</h2>
+          <div className={styles.navigationButtons}>
+            <button onClick={goToPreviousWeek}>Previous Week</button>
+            <button onClick={goToNextWeek}>Next Week</button>
+          </div>
+        </div>
+  
+        {/* Week Header (Days of the Week) */}
         <div className={styles.weekHeader}>
           <div className={styles.timeColumnHeader}></div>
-          {daysOfWeek.map((day, index) => (
-            <div key={index} className={styles.dayHeader}>
-              {day}
-            </div>
-          ))}
+          {daysOfWeek.map((day, index) => {
+            const dayDate = new Date(startOfWeek);
+            dayDate.setDate(startOfWeek.getDate() + index);
+            return (
+              <div
+                key={index}
+                className={`${styles.dayHeader} ${
+                  isCurrentDay(dayDate) ? styles.currentDay : ""
+                }`}
+              >
+                <div>{day}</div>
+                <div>
+                  {dayDate.toLocaleString("default", { month: "short", day: "numeric" })}
+                </div>
+              </div>
+            );
+          })}
         </div>
+  
+        {/* Week Body (Time Slots and Events) */}
         <div className={styles.weekBody}>
           <div className={styles.timeColumn}>
             {hours.map((hour) => (
@@ -144,15 +205,24 @@ const Calendar: React.FC = () => {
             ))}
           </div>
           <div className={styles.daysColumns}>
-            {daysOfWeek.map((day, index) => (
-              <div key={index} className={styles.dayColumn}>
-                {hours.map((hour) => (
-                  <div key={hour} className={styles.eventSlot}>
-                    {/* Placeholder for event */}
-                  </div>
-                ))}
-              </div>
-            ))}
+            {daysOfWeek.map((day, index) => {
+              const dayDate = new Date(startOfWeek);
+              dayDate.setDate(startOfWeek.getDate() + index);
+              return (
+                <div
+                  key={index}
+                  className={`${styles.dayColumn} ${
+                    isCurrentDay(dayDate) ? styles.currentDay : ""
+                  }`}
+                >
+                  {hours.map((hour) => (
+                    <div key={hour} className={styles.eventSlot}>
+                      {/* Placeholder for event */}
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -171,22 +241,62 @@ const Calendar: React.FC = () => {
       if (i < startDay || i >= startDay + daysInMonth) return null;
       return i - startDay + 1;
     });
-
+  
+    // Navigate to the previous month
+    const goToPreviousMonth = () => {
+      const newDate = new Date(currentDate);
+      newDate.setMonth(newDate.getMonth() - 1);
+      setCurrentDate(newDate);
+    };
+  
+    // Navigate to the next month
+    const goToNextMonth = () => {
+      const newDate = new Date(currentDate);
+      newDate.setMonth(newDate.getMonth() + 1);
+      setCurrentDate(newDate);
+    };
+  
+    // Check if a given date is the current day
+    const isCurrentDay = (day: number | null) => {
+      const today = new Date();
+      return (
+        day !== null &&
+        day === today.getDate() &&
+        month === today.getMonth() &&
+        year === today.getFullYear()
+      );
+    };
+  
     return (
       <div className={styles.monthView}>
+        {/* Header for Month View */}
         <div className={styles.monthHeader}>
           <h2>
             {currentDate.toLocaleString("default", { month: "long" })} {year}
           </h2>
+          <div className={styles.navigationButtons}>
+            <button onClick={goToPreviousMonth}>Previous Month</button>
+            <button onClick={goToNextMonth}>Next Month</button>
+          </div>
         </div>
+  
+        {/* Month Grid */}
         <div className={styles.monthGrid}>
+          {/* Day Headers */}
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d, i) => (
             <div key={i} className={styles.monthGridHeader}>
               {d}
             </div>
           ))}
+  
+          {/* Days of the Month */}
           {cells.map((cell, index) => (
-            <div key={index} className={styles.monthGridCell}>
+            <div
+              key={index}
+              className={`${styles.monthGridCell} ${
+                isCurrentDay(cell) ? styles.currentDay : ""
+              }`}
+            >
               {cell}
             </div>
           ))}
@@ -198,9 +308,43 @@ const Calendar: React.FC = () => {
   const renderYearView = () => {
     const year = currentDate.getFullYear();
     const months = Array.from({ length: 12 }, (_, i) => i);
+  
+    // Navigate to the previous year
+    const goToPreviousYear = () => {
+      const newDate = new Date(currentDate);
+      newDate.setFullYear(newDate.getFullYear() - 1);
+      setCurrentDate(newDate);
+    };
+  
+    // Navigate to the next year
+    const goToNextYear = () => {
+      const newDate = new Date(currentDate);
+      newDate.setFullYear(newDate.getFullYear() + 1);
+      setCurrentDate(newDate);
+    };
+  
+    // Check if a given date is the current day
+    const isCurrentDay = (day: number, monthIndex: number) => {
+      const today = new Date();
+      return (
+        day === today.getDate() &&
+        monthIndex === today.getMonth() &&
+        year === today.getFullYear()
+      );
+    };
+  
     return (
       <div className={styles.yearView}>
-        <h2>{year}</h2>
+        {/* Header for Year View */}
+        <div className={styles.yearViewHeader}>
+          <h2>{year}</h2>
+          <div className={styles.navigationButtons}>
+            <button onClick={goToPreviousYear}>Previous Year</button>
+            <button onClick={goToNextYear}>Next Year</button>
+          </div>
+        </div>
+  
+        {/* Year Grid */}
         <div className={styles.yearGrid}>
           {months.map((monthIndex) => {
             const firstDay = new Date(year, monthIndex, 1);
@@ -212,6 +356,7 @@ const Calendar: React.FC = () => {
               if (i < startDay || i >= startDay + daysInMonth) return "";
               return i - startDay + 1;
             });
+  
             return (
               <div key={monthIndex} className={styles.yearMonth}>
                 <h3>
@@ -221,7 +366,14 @@ const Calendar: React.FC = () => {
                 </h3>
                 <div className={styles.yearMonthGrid}>
                   {cells.map((cell, idx) => (
-                    <div key={idx} className={styles.yearMonthCell}>
+                    <div
+                      key={idx}
+                      className={`${styles.yearMonthCell} ${
+                        isCurrentDay(Number(cell), monthIndex)
+                          ? styles.currentDay
+                          : ""
+                      }`}
+                    >
                       {cell}
                     </div>
                   ))}
