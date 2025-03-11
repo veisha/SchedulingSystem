@@ -5,7 +5,10 @@ import { signOut } from "next-auth/react";
 import { useSession } from "next-auth/react";
 import { useState, useEffect, useRef } from "react";
 
+import Calendar from "@/components/calendar"; // import the calendar component
+
 import styles from "./Dashboard.module.css"; // all styles go here
+import calendarStyle from "@/components/Calendar.module.css"; 
 
 export default function Dashboard() {
   const [sidebarVisible, setSidebarVisible] = useState(true);
@@ -138,8 +141,12 @@ export default function Dashboard() {
         </aside>
       )}
 
-      {/* Content */}
-      <div className={styles.content}>Content Area</div>
+      <div >
+        {/* Render the calendar for Dashboard view */}
+        <Calendar />
+        </div>
     </div>
+
+
   );
 }

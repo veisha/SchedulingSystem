@@ -1,0 +1,199 @@
+/* Global reset: ensure html and body fill the viewport */
+:global(html),
+:global(body) {
+  margin: 0;
+  height: 100%;
+}
+
+/* ===============================
+   Calendar Container
+   =============================== */
+   .calendarContainer {
+    width: 100%;
+    height: 100%;
+    padding: 1.25rem;           /* 20px */
+    background-color: white;     /* Change to desired bg color */
+    box-sizing: border-box;
+  }
+  
+/* ===============================
+   View Selector Dropdown
+   =============================== */
+   .viewSelector {
+    margin-bottom: 1.25rem; /* 20px */
+    text-align: right;      /* Positioned to the far right */
+  }
+  
+  .viewDropdown {
+    padding: 0.5rem 0.75rem;  /* 8px 12px */
+    border: none;
+    background-color: #4f46e5;
+    color: #fff;
+    cursor: pointer;
+    border-radius: 0.25rem;  /* 4px */
+    transition: background-color 0.3s ease;
+    font-size: 1rem;
+  }
+  
+  .viewDropdown:hover {
+    background-color: #4338ca;
+  }
+  
+  /* ===============================
+     View Content Container
+     =============================== */
+  .viewContent {
+    margin-top: 0.625rem;       /* 10px */
+  }
+  
+  /* ===============================
+     DAY VIEW
+     =============================== */
+  .dayView {
+    width: 100%;
+    height: 100%;
+    display: flex;
+  }
+  
+  .timeColumn {
+    width: 5rem;                /* 80px */
+  }
+  
+  .timeSlot {
+    height: 2.5rem;             /* 40px */
+    border-bottom: 0.0625rem solid black;  /* 1px */
+    text-align: right;
+    padding-right: 0.3125rem;   /* 5px */
+    font-size: 0.75rem;         /* 12px */
+    color: black;
+  }
+  
+  .eventsColumn {
+    flex-grow: 1;
+    border-left: 0.0625rem solid black;
+  }
+  
+  .eventSlot {
+    height: 2.5rem;             /* 40px */
+    border-bottom: 0.0625rem solid black;
+  }
+  
+  /* ===============================
+     WEEK VIEW
+     =============================== */
+  .weekView {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .weekHeader {
+    display: flex;
+  }
+  
+  .timeColumnHeader {
+    width: 5rem;
+  }
+  
+  .dayHeader {
+    flex-grow: 1;
+    text-align: center;
+    padding: 0.5rem 0;          /* 8px 0 */
+    border-bottom: 0.0625rem solid black;
+    color: black;
+  }
+  
+  .weekBody {
+    display: flex;
+  }
+  
+  .weekBody .timeColumn {
+    width: 5rem;
+  }
+  
+  .daysColumns {
+    display: flex;
+    flex-grow: 1;
+  }
+  
+  .dayColumn {
+    flex-grow: 1;
+    border-left: 0.0625rem solid black;
+  }
+  
+  .dayColumn .eventSlot {
+    height: 2.5rem;
+    border-bottom: 0.0625rem solid black;
+  }
+  
+  /* ===============================
+     MONTH VIEW
+     =============================== */
+  .monthView {
+    width: 100%;
+    height: 100%;
+    text-align: center;
+  }
+  
+  .monthHeader {
+    margin-bottom: 0.625rem;    /* 10px */
+  }
+  
+  .monthGrid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.3125rem;             /* 5px */
+  }
+  
+  .monthGridHeader {
+    font-weight: bold;
+    background-color: #f4f4f4;
+    padding: 0.3125rem 0;       /* 5px 0 */
+    color: black;
+  }
+  
+  .monthGridCell {
+    border: 0.0625rem solid black;
+    min-height: 3.75rem;        /* 60px */
+    padding: 0.3125rem;         /* 5px */
+    color: black;
+  }
+  
+  /* ===============================
+     YEAR VIEW
+     =============================== */
+  .yearView {
+    width: 100%;
+    height: 100%;
+    text-align: center;
+  }
+  
+  .yearView h2{
+    color: black;
+  }
+
+  .yearGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.625rem;              /* 10px */
+  }
+  
+  .yearMonth {
+    border: 0.0625rem solid black;
+    padding: 0.3125rem;         /* 5px */
+    color: black;
+  }
+  
+  .yearMonthGrid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.125rem;              /* 2px */
+  }
+  
+  .yearMonthCell {
+    border: 0.0625rem solid black;
+    min-height: 1.25rem;        /* 20px */
+    font-size: 0.625rem;        /* 10px */
+  }
+  
