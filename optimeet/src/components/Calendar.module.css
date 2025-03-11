@@ -198,6 +198,11 @@
   .dayHeader:last-child {
     border-right: none; /* Remove border for the last day */
   }
+
+  .currentCell {
+    background-color: #ffeb3b; /* Light blue background for the current cell */
+    font-weight: bold; /* Bold text for the current cell */
+  }
   
   .currentDay {
     background-color: #ffeb3b; /* Yellow highlight */

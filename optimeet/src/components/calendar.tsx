@@ -10,12 +10,18 @@ enum ScheduleType {
   RESTDAY = "RESTDAY",
   BLOCK = "BLOCK",
 }
+// Define the SelectedSlot type
+type SelectedSlot = {
+  date: Date; // Start date and time
+  hour: number; // Selected hour
+  endDate: Date; // End date and time
+};
 
 const Calendar: React.FC = () => {
   const [view, setView] = useState<CalendarView>("day");
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [days, setDays] = useState<Date[]>([]);
-  const [selectedSlot, setSelectedSlot] = useState<{ date: Date; hour: number } | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<{ date: Date; hour: number; endDate: Date } | null>(null);
 
   // Update view state when the dropdown selection changes
   const handleViewChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -79,16 +85,42 @@ const Calendar: React.FC = () => {
       day: "numeric",
     });
   
+    // Helper function to format date for datetime-local input
+    const formatDateTimeLocal = (date: Date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0"); // Months are 0-indexed
+      const day = String(date.getDate()).padStart(2, "0");
+      const hours = String(date.getHours()).padStart(2, "0");
+      return `${year}-${month}-${day}T${hours}:00`; // Always set minutes to 00
+    };
+  
     // Handle event slot click
     const handleEventSlotClick = (hour: number) => {
       const selectedDate = new Date(currentDate);
       selectedDate.setHours(hour, 0, 0, 0); // Set the selected hour
-      setSelectedSlot({ date: selectedDate, hour });
+  
+      const endDate = new Date(selectedDate);
+      endDate.setHours(hour + 1, 0, 0, 0); // Set end time to 1 hour later
+  
+      setSelectedSlot({ date: selectedDate, hour, endDate });
+      console.log("Selected slot:", selectedDate); // Debugging
     };
   
     // Close the popover
     const closePopover = () => {
       setSelectedSlot(null);
+    };
+  
+    // Handle end time change
+    const handleEndTimeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const selectedEndHour = parseInt(e.target.value, 10);
+      const newEndDate = new Date(selectedSlot!.date);
+      newEndDate.setHours(selectedEndHour, 0, 0, 0); // Set the new end hour
+  
+      setSelectedSlot((prev) => ({
+        ...prev!,
+        endDate: newEndDate,
+      }));
     };
   
     // Handle form submission
@@ -100,7 +132,7 @@ const Calendar: React.FC = () => {
         title: formData.get("title") as string,
         description: formData.get("description") as string,
         startDateTime: selectedSlot!.date.toISOString(),
-        endDateTime: new Date(selectedSlot!.date.getTime() + 60 * 60 * 1000).toISOString(), // 1 hour duration
+        endDateTime: selectedSlot!.endDate.toISOString(), // Use the selected end time
         isAllDay: formData.get("isAllDay") === "on",
         repeat: formData.get("repeat") ? JSON.parse(formData.get("repeat") as string) : null,
       };
@@ -198,11 +230,29 @@ const Calendar: React.FC = () => {
                 </label>
                 <label>
                   Start Date:
-                  <input type="datetime-local" name="startDateTime" value={selectedSlot.date.toISOString().slice(0, 16)} disabled />
+                  <input
+                    type="datetime-local"
+                    name="startDateTime"
+                    value={formatDateTimeLocal(selectedSlot.date)}
+                    disabled
+                  />
                 </label>
                 <label>
                   End Date:
-                  <input type="datetime-local" name="endDateTime" value={new Date(selectedSlot.date.getTime() + 60 * 60 * 1000).toISOString().slice(0, 16)} disabled />
+                  <select
+                    name="endDateTime"
+                    value={selectedSlot.endDate.getHours()} // Use the hour from endDate
+                    onChange={handleEndTimeChange}
+                  >
+                    {hours.map((hour) => (
+                      <option key={hour} value={hour}>
+                        {new Date(0, 0, 0, hour).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label>
                   All Day:
@@ -235,17 +285,54 @@ const Calendar: React.FC = () => {
     const startOfWeek = new Date(currentDate);
     startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
   
+    // Helper function to format date for datetime-local input
+    const formatDateTimeLocal = (date: Date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0"); // Months are 0-indexed
+      const day = String(date.getDate()).padStart(2, "0");
+      const hours = String(date.getHours()).padStart(2, "0");
+      const minutes = String(date.getMinutes()).padStart(2, "0");
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
+  
+    // Get the current date and time
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentDay = now.getDate();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+  
+    // Check if the current day falls within the displayed week
+    const isCurrentWeek =
+      now >= startOfWeek && now < new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000);
+  
     // Handle event slot click
     const handleEventSlotClick = (dayIndex: number, hour: number) => {
       const selectedDate = new Date(startOfWeek);
       selectedDate.setDate(startOfWeek.getDate() + dayIndex);
       selectedDate.setHours(hour, 0, 0, 0); // Set the selected hour
-      setSelectedSlot({ date: selectedDate, hour });
+  
+      const endDate = new Date(selectedDate);
+      endDate.setHours(hour + 1, 0, 0, 0); // Set end time to 1 hour later
+  
+      setSelectedSlot({ date: selectedDate, hour, endDate });
     };
   
     // Close the popover
     const closePopover = () => {
       setSelectedSlot(null);
+    };
+  
+    // Handle end time change
+    const handleEndTimeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const selectedEndHour = parseInt(e.target.value, 10);
+      const newEndDate = new Date(selectedSlot!.date);
+      newEndDate.setHours(selectedEndHour, 0, 0, 0); // Set the new end hour
+  
+      setSelectedSlot((prev) => ({
+        ...prev!,
+        endDate: newEndDate,
+      }));
     };
   
     // Handle form submission
@@ -257,7 +344,7 @@ const Calendar: React.FC = () => {
         title: formData.get("title") as string,
         description: formData.get("description") as string,
         startDateTime: selectedSlot!.date.toISOString(),
-        endDateTime: new Date(selectedSlot!.date.getTime() + 60 * 60 * 1000).toISOString(), // 1 hour duration
+        endDateTime: selectedSlot!.endDate.toISOString(), // Use the selected end time
         isAllDay: formData.get("isAllDay") === "on",
         repeat: formData.get("repeat") ? JSON.parse(formData.get("repeat") as string) : null,
       };
@@ -332,19 +419,37 @@ const Calendar: React.FC = () => {
             ))}
           </div>
           <div className={styles.daysColumns}>
-            {daysOfWeek.map((day, dayIndex) => (
-              <div key={dayIndex} className={styles.dayColumn}>
-                {hours.map((hour) => (
-                  <div
-                    key={hour}
-                    className={styles.eventSlot}
-                    onClick={() => handleEventSlotClick(dayIndex, hour)}
-                  >
-                    {/* Placeholder for event */}
-                  </div>
-                ))}
-              </div>
-            ))}
+            {daysOfWeek.map((day, dayIndex) => {
+              const dayDate = new Date(startOfWeek);
+              dayDate.setDate(startOfWeek.getDate() + dayIndex);
+  
+              // Check if this is the current day and hour
+              const isCurrentCell =
+                isCurrentWeek &&
+                dayDate.getDate() === currentDay &&
+                dayDate.getMonth() === currentMonth &&
+                dayDate.getFullYear() === currentYear;
+  
+              return (
+                <div key={dayIndex} className={styles.dayColumn}>
+                  {hours.map((hour) => {
+                    const isCurrentTime = isCurrentCell && hour === currentHour;
+  
+                    return (
+                      <div
+                        key={hour}
+                        className={`${styles.eventSlot} ${
+                          isCurrentTime ? styles.currentCell : ""
+                        }`} // Apply currentCell class
+                        onClick={() => handleEventSlotClick(dayIndex, hour)}
+                      >
+                        {/* Placeholder for event */}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
           </div>
         </div>
   
@@ -373,11 +478,29 @@ const Calendar: React.FC = () => {
                 </label>
                 <label>
                   Start Date:
-                  <input type="datetime-local" name="startDateTime" value={selectedSlot.date.toISOString().slice(0, 16)} disabled />
+                  <input
+                    type="datetime-local"
+                    name="startDateTime"
+                    value={formatDateTimeLocal(selectedSlot.date)} // Use the helper function
+                    disabled
+                  />
                 </label>
                 <label>
                   End Date:
-                  <input type="datetime-local" name="endDateTime" value={new Date(selectedSlot.date.getTime() + 60 * 60 * 1000).toISOString().slice(0, 16)} disabled />
+                  <select
+                    name="endDateTime"
+                    value={selectedSlot.endDate.getHours()} // Use the hour from endDate
+                    onChange={handleEndTimeChange}
+                  >
+                    {hours.map((hour) => (
+                      <option key={hour} value={hour}>
+                        {new Date(0, 0, 0, hour).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label>
                   All Day:
