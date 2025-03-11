@@ -30,27 +30,90 @@ const Calendar: React.FC = () => {
     }
   }, [currentDate, view]);
 
+  // Navigate to the previous day
+  const goToPreviousDay = () => {
+    const newDate = new Date(currentDate);
+    newDate.setDate(newDate.getDate() - 1);
+    setCurrentDate(newDate);
+  };
+
+  // Navigate to the next day
+  const goToNextDay = () => {
+    const newDate = new Date(currentDate);
+    newDate.setDate(newDate.getDate() + 1);
+    setCurrentDate(newDate);
+  };
+
+  // Get the current hour for highlighting
+  const getCurrentHour = () => {
+    const now = new Date();
+    if (
+      now.getDate() === currentDate.getDate() &&
+      now.getMonth() === currentDate.getMonth() &&
+      now.getFullYear() === currentDate.getFullYear()
+    ) {
+      return now.getHours();
+    }
+    return -1; // No highlight if it's not the current day
+  };
+
   // --- Render functions for each view ---
   const renderDayView = () => {
     const hours = Array.from({ length: 24 }, (_, i) => i);
+    const currentHour = getCurrentHour();
+  
+    // Format the current day and date
+    const currentDay = currentDate.toLocaleString("default", { weekday: "long" });
+    const currentDateFormatted = currentDate.toLocaleString("default", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  
     return (
       <div className={styles.dayView}>
-        <div className={styles.timeColumn}>
-          {hours.map((hour) => (
-            <div key={hour} className={styles.timeSlot}>
-              {new Date(0, 0, 0, hour).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </div>
-          ))}
+        {/* Header for Day View */}
+        <div className={styles.dayViewHeader}>
+          <h2>{currentDay}</h2>
+          <p>{currentDateFormatted}</p>
+          <div className={styles.navigationButtons}>
+            <button onClick={goToPreviousDay}>Previous Day</button>
+            <button onClick={goToNextDay}>Next Day</button>
+          </div>
         </div>
-        <div className={styles.eventsColumn}>
-          {hours.map((hour) => (
-            <div key={hour} className={styles.eventSlot}>
-              {/* Placeholder for events */}
-            </div>
-          ))}
+  
+        {/* Time and Events Columns */}
+        <div className={styles.dayViewColumns}>
+          {/* Time Column */}
+          <div className={styles.timeColumn}>
+            {hours.map((hour) => (
+              <div
+                key={hour}
+                className={`${styles.timeSlot} ${
+                  hour === currentHour ? styles.currentTime : ""
+                }`}
+              >
+                {new Date(0, 0, 0, hour).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </div>
+            ))}
+          </div>
+  
+          {/* Events Column */}
+          <div className={styles.eventsColumn}>
+            {hours.map((hour) => (
+              <div
+                key={hour}
+                className={`${styles.eventSlot} ${
+                  hour === currentHour ? styles.currentTime : ""
+                }`}
+              >
+                {/* Placeholder for events */}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );

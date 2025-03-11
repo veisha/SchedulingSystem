@@ -126,24 +126,24 @@ export default function Dashboard() {
                   Settings
                 </Link>
               </li>
+               {/* Add logout button as a list item */}
+              <li className={styles.sidebarNavItem}>
+                <button
+                  onClick={handleLogout}
+                  className={styles.sidebarLogoutButton}
+                >
+                  Logout
+                </button>
+              </li>
             </ul>
           </nav>
-
-          {/* Logout Button Section */}
-          <div className={styles.sidebarLogoutContainer}>
-            <button
-              onClick={handleLogout}
-              className={styles.sidebarLogoutButton}
-            >
-              Logout
-            </button>
-          </div>
         </aside>
       )}
 
-      <div >
-        {/* Render the calendar for Dashboard view */}
-        <Calendar />
+        {/* Content Area */}
+        <div className={styles.content}>
+          {/* Render the calendar for Dashboard view */}
+          <Calendar />
         </div>
     </div>
 
