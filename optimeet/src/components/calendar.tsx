@@ -4,11 +4,18 @@ import React, { useState, useEffect } from "react";
 import styles from "./Calendar.module.css";
 
 type CalendarView = "day" | "week" | "month" | "year";
+enum ScheduleType {
+  TASK = "TASK",
+  APPOINTMENT = "APPOINTMENT",
+  RESTDAY = "RESTDAY",
+  BLOCK = "BLOCK",
+}
 
 const Calendar: React.FC = () => {
   const [view, setView] = useState<CalendarView>("day");
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [days, setDays] = useState<Date[]>([]);
+  const [selectedSlot, setSelectedSlot] = useState<{ date: Date; hour: number } | null>(null);
 
   // Update view state when the dropdown selection changes
   const handleViewChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -27,6 +34,8 @@ const Calendar: React.FC = () => {
         daysArray.push(new Date(year, month, d));
       }
       setDays(daysArray);
+    } else {
+      setDays([]);
     }
   }, [currentDate, view]);
 
@@ -70,6 +79,53 @@ const Calendar: React.FC = () => {
       day: "numeric",
     });
   
+    // Handle event slot click
+    const handleEventSlotClick = (hour: number) => {
+      const selectedDate = new Date(currentDate);
+      selectedDate.setHours(hour, 0, 0, 0); // Set the selected hour
+      setSelectedSlot({ date: selectedDate, hour });
+    };
+  
+    // Close the popover
+    const closePopover = () => {
+      setSelectedSlot(null);
+    };
+  
+    // Handle form submission
+    const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      const formData = new FormData(event.currentTarget);
+      const scheduleData = {
+        type: formData.get("type") as ScheduleType,
+        title: formData.get("title") as string,
+        description: formData.get("description") as string,
+        startDateTime: selectedSlot!.date.toISOString(),
+        endDateTime: new Date(selectedSlot!.date.getTime() + 60 * 60 * 1000).toISOString(), // 1 hour duration
+        isAllDay: formData.get("isAllDay") === "on",
+        repeat: formData.get("repeat") ? JSON.parse(formData.get("repeat") as string) : null,
+      };
+  
+      // Submit the schedule data to the backend
+      try {
+        const response = await fetch("/api/schedules", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(scheduleData),
+        });
+        if (response.ok) {
+          alert("Schedule added successfully!");
+          closePopover();
+        } else {
+          alert("Failed to add schedule.");
+        }
+      } catch (error) {
+        console.error("Error submitting schedule:", error);
+        alert("An error occurred while adding the schedule.");
+      }
+    };
+  
     return (
       <div className={styles.dayView}>
         {/* Header for Day View */}
@@ -109,12 +165,64 @@ const Calendar: React.FC = () => {
                 className={`${styles.eventSlot} ${
                   hour === currentHour ? styles.currentTime : ""
                 }`}
+                onClick={() => handleEventSlotClick(hour)}
               >
                 {/* Placeholder for events */}
               </div>
             ))}
           </div>
         </div>
+  
+        {/* Popover for Adding Schedule */}
+        {selectedSlot && (
+          <div className={styles.popover}>
+            <div className={styles.popoverContent}>
+              <h3>Add Schedule</h3>
+              <form onSubmit={handleFormSubmit}>
+                <label>
+                  Type:
+                  <select name="type" required>
+                    <option value={ScheduleType.TASK}>Task</option>
+                    <option value={ScheduleType.APPOINTMENT}>Appointment</option>
+                    <option value={ScheduleType.RESTDAY}>Rest Day</option>
+                    <option value={ScheduleType.BLOCK}>Block</option>
+                  </select>
+                </label>
+                <label>
+                  Title:
+                  <input type="text" name="title" required />
+                </label>
+                <label>
+                  Description:
+                  <textarea name="description" />
+                </label>
+                <label>
+                  Start Date:
+                  <input type="datetime-local" name="startDateTime" value={selectedSlot.date.toISOString().slice(0, 16)} disabled />
+                </label>
+                <label>
+                  End Date:
+                  <input type="datetime-local" name="endDateTime" value={new Date(selectedSlot.date.getTime() + 60 * 60 * 1000).toISOString().slice(0, 16)} disabled />
+                </label>
+                <label>
+                  All Day:
+                  <input type="checkbox" name="isAllDay" />
+                </label>
+                <label>
+                  Repeat:
+                  <select name="repeat">
+                    <option value="">None</option>
+                    <option value='{"frequency": "DAILY"}'>Daily</option>
+                    <option value='{"frequency": "WEEKLY"}'>Weekly</option>
+                    <option value='{"frequency": "MONTHLY"}'>Monthly</option>
+                  </select>
+                </label>
+                <button type="submit">Add Schedule</button>
+                <button type="button" onClick={closePopover}>Cancel</button>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -127,46 +235,72 @@ const Calendar: React.FC = () => {
     const startOfWeek = new Date(currentDate);
     startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
   
-    // Format the week range (e.g., "Oct 23 - Oct 29")
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 6);
-    const weekRange = `${startOfWeek.toLocaleString("default", {
-      month: "short",
-      day: "numeric",
-    })} - ${endOfWeek.toLocaleString("default", { month: "short", day: "numeric" })}`;
-  
-    // Check if a given date is the current day
-    const isCurrentDay = (date: Date) => {
-      const today = new Date();
-      return (
-        date.getDate() === today.getDate() &&
-        date.getMonth() === today.getMonth() &&
-        date.getFullYear() === today.getFullYear()
-      );
+    // Handle event slot click
+    const handleEventSlotClick = (dayIndex: number, hour: number) => {
+      const selectedDate = new Date(startOfWeek);
+      selectedDate.setDate(startOfWeek.getDate() + dayIndex);
+      selectedDate.setHours(hour, 0, 0, 0); // Set the selected hour
+      setSelectedSlot({ date: selectedDate, hour });
     };
   
-    // Navigate to the previous week
-    const goToPreviousWeek = () => {
-      const newDate = new Date(currentDate);
-      newDate.setDate(newDate.getDate() - 7);
-      setCurrentDate(newDate);
+    // Close the popover
+    const closePopover = () => {
+      setSelectedSlot(null);
     };
   
-    // Navigate to the next week
-    const goToNextWeek = () => {
-      const newDate = new Date(currentDate);
-      newDate.setDate(newDate.getDate() + 7);
-      setCurrentDate(newDate);
+    // Handle form submission
+    const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      const formData = new FormData(event.currentTarget);
+      const scheduleData = {
+        type: formData.get("type") as ScheduleType,
+        title: formData.get("title") as string,
+        description: formData.get("description") as string,
+        startDateTime: selectedSlot!.date.toISOString(),
+        endDateTime: new Date(selectedSlot!.date.getTime() + 60 * 60 * 1000).toISOString(), // 1 hour duration
+        isAllDay: formData.get("isAllDay") === "on",
+        repeat: formData.get("repeat") ? JSON.parse(formData.get("repeat") as string) : null,
+      };
+  
+      // Submit the schedule data to the backend
+      try {
+        const response = await fetch("/api/schedules", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(scheduleData),
+        });
+        if (response.ok) {
+          alert("Schedule added successfully!");
+          closePopover();
+        } else {
+          alert("Failed to add schedule.");
+        }
+      } catch (error) {
+        console.error("Error submitting schedule:", error);
+        alert("An error occurred while adding the schedule.");
+      }
     };
   
     return (
       <div className={styles.weekView}>
         {/* Header for Week View */}
         <div className={styles.weekViewHeader}>
-          <h2>{weekRange}</h2>
+          <h2>
+            {startOfWeek.toLocaleString("default", { month: "short", day: "numeric" })} -{" "}
+            {new Date(startOfWeek.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleString("default", {
+              month: "short",
+              day: "numeric",
+            })}
+          </h2>
           <div className={styles.navigationButtons}>
-            <button onClick={goToPreviousWeek}>Previous Week</button>
-            <button onClick={goToNextWeek}>Next Week</button>
+            <button onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() - 7)))}>
+              Previous Week
+            </button>
+            <button onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() + 7)))}>
+              Next Week
+            </button>
           </div>
         </div>
   
@@ -177,16 +311,9 @@ const Calendar: React.FC = () => {
             const dayDate = new Date(startOfWeek);
             dayDate.setDate(startOfWeek.getDate() + index);
             return (
-              <div
-                key={index}
-                className={`${styles.dayHeader} ${
-                  isCurrentDay(dayDate) ? styles.currentDay : ""
-                }`}
-              >
+              <div key={index} className={styles.dayHeader}>
                 <div>{day}</div>
-                <div>
-                  {dayDate.toLocaleString("default", { month: "short", day: "numeric" })}
-                </div>
+                <div>{dayDate.toLocaleString("default", { month: "short", day: "numeric" })}</div>
               </div>
             );
           })}
@@ -205,26 +332,72 @@ const Calendar: React.FC = () => {
             ))}
           </div>
           <div className={styles.daysColumns}>
-            {daysOfWeek.map((day, index) => {
-              const dayDate = new Date(startOfWeek);
-              dayDate.setDate(startOfWeek.getDate() + index);
-              return (
-                <div
-                  key={index}
-                  className={`${styles.dayColumn} ${
-                    isCurrentDay(dayDate) ? styles.currentDay : ""
-                  }`}
-                >
-                  {hours.map((hour) => (
-                    <div key={hour} className={styles.eventSlot}>
-                      {/* Placeholder for event */}
-                    </div>
-                  ))}
-                </div>
-              );
-            })}
+            {daysOfWeek.map((day, dayIndex) => (
+              <div key={dayIndex} className={styles.dayColumn}>
+                {hours.map((hour) => (
+                  <div
+                    key={hour}
+                    className={styles.eventSlot}
+                    onClick={() => handleEventSlotClick(dayIndex, hour)}
+                  >
+                    {/* Placeholder for event */}
+                  </div>
+                ))}
+              </div>
+            ))}
           </div>
         </div>
+  
+        {/* Popover for Adding Schedule */}
+        {selectedSlot && (
+          <div className={styles.popover}>
+            <div className={styles.popoverContent}>
+              <h3>Add Schedule</h3>
+              <form onSubmit={handleFormSubmit}>
+                <label>
+                  Type:
+                  <select name="type" required>
+                    <option value={ScheduleType.TASK}>Task</option>
+                    <option value={ScheduleType.APPOINTMENT}>Appointment</option>
+                    <option value={ScheduleType.RESTDAY}>Rest Day</option>
+                    <option value={ScheduleType.BLOCK}>Block</option>
+                  </select>
+                </label>
+                <label>
+                  Title:
+                  <input type="text" name="title" required />
+                </label>
+                <label>
+                  Description:
+                  <textarea name="description" />
+                </label>
+                <label>
+                  Start Date:
+                  <input type="datetime-local" name="startDateTime" value={selectedSlot.date.toISOString().slice(0, 16)} disabled />
+                </label>
+                <label>
+                  End Date:
+                  <input type="datetime-local" name="endDateTime" value={new Date(selectedSlot.date.getTime() + 60 * 60 * 1000).toISOString().slice(0, 16)} disabled />
+                </label>
+                <label>
+                  All Day:
+                  <input type="checkbox" name="isAllDay" />
+                </label>
+                <label>
+                  Repeat:
+                  <select name="repeat">
+                    <option value="">None</option>
+                    <option value='{"frequency": "DAILY"}'>Daily</option>
+                    <option value='{"frequency": "WEEKLY"}'>Weekly</option>
+                    <option value='{"frequency": "MONTHLY"}'>Monthly</option>
+                  </select>
+                </label>
+                <button type="submit">Add Schedule</button>
+                <button type="button" onClick={closePopover}>Cancel</button>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
