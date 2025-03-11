@@ -256,6 +256,16 @@ const Calendar: React.FC = () => {
       setCurrentDate(newDate);
     };
   
+    // Handle day click
+    const handleDayClick = (day: number | null) => {
+      if (day !== null) {
+        const newDate = new Date(currentDate);
+        newDate.setDate(day);
+        setCurrentDate(newDate);
+        setView("day"); // Switch to day view
+      }
+    };
+  
     // Check if a given date is the current day
     const isCurrentDay = (day: number | null) => {
       const today = new Date();
@@ -296,6 +306,7 @@ const Calendar: React.FC = () => {
               className={`${styles.monthGridCell} ${
                 isCurrentDay(cell) ? styles.currentDay : ""
               }`}
+              onClick={() => handleDayClick(cell)} // Click to navigate to day
             >
               {cell}
             </div>
@@ -321,6 +332,23 @@ const Calendar: React.FC = () => {
       const newDate = new Date(currentDate);
       newDate.setFullYear(newDate.getFullYear() + 1);
       setCurrentDate(newDate);
+    };
+  
+    // Handle month click
+    const handleMonthClick = (monthIndex: number) => {
+      const newDate = new Date(currentDate);
+      newDate.setMonth(monthIndex);
+      setCurrentDate(newDate);
+      setView("month"); // Switch to month view
+    };
+  
+    // Handle day click
+    const handleDayClick = (day: number, monthIndex: number) => {
+      const newDate = new Date(currentDate);
+      newDate.setMonth(monthIndex);
+      newDate.setDate(day);
+      setCurrentDate(newDate);
+      setView("day"); // Switch to day view
     };
   
     // Check if a given date is the current day
@@ -358,7 +386,11 @@ const Calendar: React.FC = () => {
             });
   
             return (
-              <div key={monthIndex} className={styles.yearMonth}>
+              <div
+                key={monthIndex}
+                className={styles.yearMonth}
+                onClick={() => handleMonthClick(monthIndex)} // Click to navigate to month
+              >
                 <h3>
                   {new Date(year, monthIndex).toLocaleString("default", {
                     month: "short",
@@ -373,6 +405,10 @@ const Calendar: React.FC = () => {
                           ? styles.currentDay
                           : ""
                       }`}
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent month click from triggering
+                        if (cell) handleDayClick(Number(cell), monthIndex);
+                      }}
                     >
                       {cell}
                     </div>

@@ -109,7 +109,7 @@
 
 .timeSlot {
   height: 2.5rem; /* 40px */
-  border-bottom: 0.0625rem solid black; /* 1px */
+  border-bottom: 0.0625rem solid rgb(188, 188, 188); /* 1px */
   text-align: right;
   padding-right: 0.3125rem; /* 5px */
   font-size: 0.75rem; /* 12px */
@@ -118,12 +118,12 @@
 
 .eventsColumn {
   flex-grow: 1;
-  border-left: 0.0625rem solid black;
+  border-left: 0.0625rem solid rgb(188, 188, 188);
 }
 
 .eventSlot {
   height: 2.5rem; /* 40px */
-  border-bottom: 0.0625rem solid black;
+  border-bottom: 0.0625rem solid rgb(188, 188, 188);
 }
 
 .currentTime {
@@ -174,12 +174,12 @@
   
   .weekHeader {
     display: flex;
-    border-bottom: 0.0625rem solid black; /* 1px */
+    border-bottom: 0.0625rem solid rgb(188, 188, 188); /* 1px */
   }
   
   .timeColumnHeader {
     width: 5rem; /* 80px - Same as timeColumn */
-    border-right: 0.0625rem solid black; /* 1px - Match the border */
+    border-right: 0.0625rem solid rgb(188, 188, 188); /* 1px - Match the border */
     background-color: #f4f4f4; /* Match the header background */
   }
   
@@ -188,7 +188,7 @@
     min-width: 0; /* Allow text to truncate if necessary */
     text-align: center;
     padding: 0.5rem 0; /* 8px 0 */
-    border-right: 0.0625rem solid black; /* 1px - Add border between days */
+    border-right: 0.0625rem solid rgb(188, 188, 188); /* 1px - Add border between days */
     color: black;
     overflow: hidden; /* Prevent text from overflowing */
     white-space: nowrap; /* Keep text in a single line */
@@ -210,13 +210,13 @@
   
   .timeColumn {
     width: 5rem; /* 80px */
-    border-right: 0.0625rem solid black; /* 1px - Match the border */
+    border-right: 0.0625rem solid rgb(188, 188, 188); /* 1px - Match the border */
     background-color: #f4f4f4; /* Match the header background */
   }
   
   .timeSlot {
     height: 2.5rem; /* 40px */
-    border-bottom: 0.0625rem solid black; /* 1px */
+    border-bottom: 0.0625rem solid blrgb(188, 188, 188)ck; /* 1px */
     text-align: right;
     padding-right: 0.3125rem; /* 5px */
     font-size: 0.75rem; /* 12px */
@@ -231,7 +231,7 @@
   .dayColumn {
     flex: 1; /* Distribute space evenly */
     min-width: 0; /* Allow content to fit within the column */
-    border-right: 0.0625rem solid black; /* 1px - Add border between days */
+    border-right: 0.0625rem solid rgb(188, 188, 188); /* 1px - Add border between days */
   }
   
   .dayColumn:last-child {
@@ -298,13 +298,19 @@
 }
 
 .monthGridCell {
-  border: 0.0625rem solid black; /* 1px */
+  border: 0.0625rem solid rgb(188, 188, 188); /* 1px */
   min-height: 3.75rem; /* 60px */
   padding: 0.3125rem; /* 5px */
   color: black;
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer; /* Indicate interactivity */
+  transition: background-color 0.3s ease;
+}
+
+.monthGridCell:hover {
+  background-color: #c2c2c2; /* Light gray on hover */
 }
 
 .currentDay {
@@ -363,6 +369,12 @@
     border: 0.0625rem solid black; /* 1px */
     padding: 0.3125rem; /* 5px */
     color: black;
+    cursor: pointer; /* Indicate interactivity */
+    transition: background-color 0.3s ease;
+  }
+  
+  .yearMonth:hover {
+    background-color: #f4f4f4; /* Light gray on hover */
   }
   
   .yearMonthGrid {
@@ -372,12 +384,18 @@
   }
   
   .yearMonthCell {
-    border: 0.0625rem solid black; /* 1px */
+    border: 0.0625rem solid rgb(188, 188, 188); /* 1px */
     min-height: 1.25rem; /* 20px */
     font-size: 0.625rem; /* 10px */
     display: flex;
     align-items: center;
     justify-content: center;
+    cursor: pointer; /* Indicate interactivity */
+    transition: background-color 0.3s ease;
+  }
+  
+  .yearMonthCell:hover {
+    background-color: #c2c2c2; /* Light gray on hover */
   }
   
   .currentDay {
