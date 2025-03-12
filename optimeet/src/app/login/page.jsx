@@ -20,17 +20,22 @@ export default function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    const res = await signIn('credentials', {
-      redirect: false,
-      email: form.email,
-      password: form.password,
-    });
-
-    if (res.error) {
-      setError('Invalid email or password');
-    } else {
-      router.push('/dashboard');
+  
+    try {
+      const res = await signIn('credentials', {
+        redirect: false,
+        email: form.email,
+        password: form.password,
+      });
+  
+      if (res.error) {
+        setError('Invalid email or password');
+      } else {
+        router.push('/dashboard');
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      setError('An unexpected error occurred');
     }
   };
 

@@ -27,16 +27,16 @@ export default function Register() {
     e.preventDefault();
     setError("");
     setSuccess("");
-
+  
     try {
       const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form)
       });
-
+  
       const data = await res.json();
-
+  
       if (!res.ok) {
         setError(data.error || "Something went wrong!");
       } else {
@@ -49,8 +49,8 @@ export default function Register() {
         });
       }
     } catch (err) {
+      console.error("Registration error:", err);
       setError("An unexpected error occurred!");
-      console.error(err);
     }
   };
 
