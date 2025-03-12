@@ -7,7 +7,7 @@ export async function POST(request) {
     const { name, email, password, timeZone } = await request.json();
 
     // Step 1: Register the user with Supabase
-    const { data: supabaseData, error: supabaseError } = await supabase.auth.signUp({
+    const { error: supabaseError } = await supabase.auth.signUp({
       email,
       password,
       options: {
