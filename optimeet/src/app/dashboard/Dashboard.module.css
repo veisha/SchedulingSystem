@@ -1,21 +1,4 @@
-/* =======================
-   Global Resets (Optional)
-   Move these to globals.css if preferred
-   ======================= */
-   :global(html),
-   
-   :global(body) {
-     display: flex;
-     justify-content: center;
-     align-items: center;
-     background-color: #f0f0f0;
 
-     margin: 0;
-     font-family: Arial, sans-serif;
-     height: 100%;
-     width: 100%;
-     overflow: hidden;
-   }
    
    /* =======================
       Main Container

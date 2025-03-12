@@ -1,9 +1,4 @@
-/* Global reset: ensure html and body fill the viewport */
-:global(html),
-:global(body) {
-  margin: 0;
-  height: 100%;
-}
+
 
 /* ===============================
    Calendar Container
