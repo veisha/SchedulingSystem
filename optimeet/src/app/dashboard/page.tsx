@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { useSession } from "next-auth/react";
-import { useState, useEffect, useRef } from "react";
+import { useCallback, useState, useEffect, useRef } from "react";
 
 import Calendar from "@/components/calendar"; // import the calendar component
 
@@ -25,7 +25,7 @@ export default function Dashboard() {
     });
   };
 
-  const adjustButtonPosition = () => {
+  const adjustButtonPosition = useCallback(() => {
     const sidebar = sidebarRef.current;
     const header = headerRef.current;
     const button = buttonRef.current;
@@ -41,7 +41,7 @@ export default function Dashboard() {
 
       button.style.top = `${headerHeight / 2}px`;
     }
-  };
+  }, [sidebarVisible]);
 
   const handleToggleSidebar = () => {
     setSidebarVisible((prev) => !prev);
@@ -49,7 +49,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     adjustButtonPosition();
-  }, [sidebarVisible]);
+  }, [sidebarVisible, adjustButtonPosition]);
 
   useEffect(() => {
     window.addEventListener("resize", adjustButtonPosition);
@@ -58,7 +58,7 @@ export default function Dashboard() {
     return () => {
       window.removeEventListener("resize", adjustButtonPosition);
     };
-  }, []);
+  }, [adjustButtonPosition]); 
 
   return (
     <div
