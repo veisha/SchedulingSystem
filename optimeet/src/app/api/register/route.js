@@ -7,7 +7,7 @@ export async function POST(request) {
     const { name, email, password, timeZone } = await request.json();
 
     // Step 1: Register the user with Supabase
-    const { error: supabaseError } = await supabase.auth.signUp({
+    const { data: supabaseUser, error: supabaseError } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -23,11 +23,12 @@ export async function POST(request) {
     }
 
     // Step 2: Create a corresponding user record in Prisma
+    // Do not store the plain text password in Prisma
     const newUser = await prisma.user.create({
       data: {
+        id: supabaseUser.user.id, // Use the Supabase user ID
         name,
         email,
-        password, // Note: Store hashed passwords in production
         timeZone,
       },
     });
@@ -35,6 +36,9 @@ export async function POST(request) {
     return NextResponse.json(newUser, { status: 201 });
   } catch (error) {
     console.error('Registration error:', error);
-    return NextResponse.json({ error: error.message || 'Registration failed' }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || 'Registration failed' },
+      { status: 500 }
+    );
   }
 }

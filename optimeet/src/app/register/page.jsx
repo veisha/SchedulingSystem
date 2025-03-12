@@ -91,6 +91,15 @@ export default function RegisterPage() {
 
           {error && <p className={styles.error}>{error}</p>}
         </form>
+
+        <div className={styles.footer}>
+          <p>
+            Already have an account?{' '}
+            <a href="/login" className={styles.link}>
+              Login
+            </a>
+          </p>
+        </div>
       </div>
     </div>
   );
