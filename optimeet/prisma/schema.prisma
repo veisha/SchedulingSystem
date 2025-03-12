@@ -15,13 +15,12 @@ datasource db {
 }
 
 model User {
-  id           Int           @id @default(autoincrement()) // Or use String with cuid() if you want UUID
+  id           String      @id @default(uuid()) // Changed to String UUID
   name         String
-  email        String        @unique
-  password     String
-  avatar       String?       // Optional URL
+  email        String      @unique
+  avatar       String?     // Optional URL
   timeZone     String
-  preferences  Json?         // JSON user preferences (working hours, etc.)
+  preferences  Json?       // JSON user preferences (working hours, etc.)
   
   schedules             Schedule[]
   sentAppointmentRequests     AppointmentRequest[] @relation("SentRequests")
@@ -32,9 +31,9 @@ model User {
 }
 
 model Schedule {
-  id            Int       @id @default(autoincrement()) // Or use String with cuid() if you want UUID
-  user          User      @relation(fields: [userId], references: [id])
-  userId        Int
+  id            String      @id @default(uuid()) // Changed to String UUID
+  user          User        @relation(fields: [userId], references: [id])
+  userId        String      // Changed to String to match User.id
 
   type          ScheduleType
   title         String
@@ -50,16 +49,16 @@ model Schedule {
 }
 
 model AppointmentRequest {
-  id            Int       @id @default(autoincrement()) // Or use String with cuid() if you want UUID
+  id            String      @id @default(uuid()) // Changed to String UUID
 
-  sender        User      @relation("SentRequests", fields: [senderId], references: [id])
-  senderId      Int
+  sender        User        @relation("SentRequests", fields: [senderId], references: [id])
+  senderId      String      // Changed to String to match User.id
 
-  receiver      User      @relation("ReceivedRequests", fields: [receiverId], references: [id])
-  receiverId    Int
+  receiver      User        @relation("ReceivedRequests", fields: [receiverId], references: [id])
+  receiverId    String      // Changed to String to match User.id
 
-  proposedTimes Json      // Array of proposed time slots
-  selectedTime  DateTime? // Chosen confirmed time (optional until accepted)
+  proposedTimes Json        // Array of proposed time slots
+  selectedTime  DateTime?   // Chosen confirmed time (optional until accepted)
   status        AppointmentStatus @default(PENDING)
   message       String?
 
