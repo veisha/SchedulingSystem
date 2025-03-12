@@ -23,7 +23,6 @@ export async function POST(request) {
     }
 
     // Step 2: Create a corresponding user record in Prisma
-    // Do not store the plain text password in Prisma
     const newUser = await prisma.user.create({
       data: {
         id: supabaseUser.user.id, // Use the Supabase user ID
