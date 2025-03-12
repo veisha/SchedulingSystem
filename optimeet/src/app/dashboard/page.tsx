@@ -8,7 +8,6 @@ import { useState, useEffect, useRef } from "react";
 import Calendar from "@/components/calendar"; // import the calendar component
 
 import styles from "./Dashboard.module.css"; // all styles go here
-import calendarStyle from "@/components/Calendar.module.css"; 
 
 export default function Dashboard() {
   const [sidebarVisible, setSidebarVisible] = useState(true);
@@ -32,7 +31,6 @@ export default function Dashboard() {
     const button = buttonRef.current;
 
     if (sidebar && header && button) {
-      const sidebarWidth = sidebar.offsetWidth;
       const headerHeight = header.offsetHeight;
 
       if (!sidebarVisible) {

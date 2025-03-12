@@ -11,11 +11,11 @@ enum ScheduleType {
   BLOCK = "BLOCK",
 }
 // Define the SelectedSlot type
-type SelectedSlot = {
-  date: Date; // Start date and time
-  hour: number; // Selected hour
-  endDate: Date; // End date and time
-};
+// type SelectedSlot = {
+//   date: Date; // Start date and time
+//   hour: number; // Selected hour
+//   endDate: Date; // End date and time
+// };
 
 const Calendar: React.FC = () => {
   const [view, setView] = useState<CalendarView>("day");
@@ -36,6 +36,8 @@ const Calendar: React.FC = () => {
       const firstDay = new Date(year, month, 1);
       const lastDay = new Date(year, month + 1, 0);
       const daysArray: Date[] = [];
+      console.log(firstDay);
+      console.log(days);
       for (let d = 1; d <= lastDay.getDate(); d++) {
         daysArray.push(new Date(year, month, d));
       }
