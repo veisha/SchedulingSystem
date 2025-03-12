@@ -1,56 +1,51 @@
-"use client";
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import styles from "./Register.module.css"; // Import your CSS module here!
+'use client';
 
-export default function Register() {
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import styles from './Register.module.css';
+
+export default function RegisterPage() {
+  const router = useRouter();
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [form, setForm] = useState({
-    name: "",
-    email: "",
-    password: "",
-    timeZone: ""
+    name: '',
+    email: '',
+    password: '',
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   });
-
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-
-  useEffect(() => {
-    const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    setForm((prev) => ({ ...prev, timeZone: userTimeZone }));
-  }, []);
-
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
-  
+
+    if (!form.name || !form.email || !form.password) {
+      setError('Please fill in all fields');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
     try {
-      const res = await fetch("/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form)
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
       });
-  
-      const data = await res.json();
-  
-      if (!res.ok) {
-        setError(data.error || "Something went wrong!");
-      } else {
-        setSuccess("Account created! You can now log in.");
-        setForm({
-          name: "",
-          email: "",
-          password: "",
-          timeZone: form.timeZone
-        });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Registration failed');
       }
-    } catch (err) {
-      console.error("Registration error:", err);
-      setError("An unexpected error occurred!");
+
+      console.log('Registration successful:', data);
+      router.push('/login');
+    } catch (error) {
+      console.error('Registration error:', error);
+      setError(error.message || 'An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -65,7 +60,7 @@ export default function Register() {
             name="name"
             placeholder="Full Name"
             value={form.name}
-            onChange={handleChange}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
             required
             className={styles.input}
           />
@@ -75,7 +70,7 @@ export default function Register() {
             name="email"
             placeholder="Email"
             value={form.email}
-            onChange={handleChange}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
             required
             className={styles.input}
           />
@@ -85,19 +80,16 @@ export default function Register() {
             name="password"
             placeholder="Password"
             value={form.password}
-            onChange={handleChange}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
             required
             className={styles.input}
           />
 
-          <button type="submit" className={styles.button}>Register</button>
+          <button type="submit" className={styles.button} disabled={isLoading}>
+            {isLoading ? 'Registering...' : 'Register'}
+          </button>
 
           {error && <p className={styles.error}>{error}</p>}
-          {success && <p className={styles.success}>{success}</p>}
-
-          <p className={styles.footer}>
-            Already have an account? <Link href="/login">Login</Link>
-          </p>
         </form>
       </div>
     </div>

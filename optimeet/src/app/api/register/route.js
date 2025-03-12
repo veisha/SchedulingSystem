@@ -1,40 +1,40 @@
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
 import { NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
+import prisma from '@/lib/prisma';
 
-const prisma = new PrismaClient();
-
-export async function POST(req) {
+export async function POST(request) {
   try {
-    // 👇 Receive the JSON data from the request body
-    const { name, email, password, timeZone } = await req.json();
+    const { name, email, password, timeZone } = await request.json();
 
-    // ✅ Check if the user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (existingUser) {
-      return NextResponse.json({ error: 'User already exists' }, { status: 400 });
-    }
-
-    // ✅ Hash the password before saving
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // ✅ Create a new user in the database, including the timeZone
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-        timeZone, // ← timeZone goes here!
+    // Step 1: Register the user with Supabase
+    const { data: supabaseData, error: supabaseError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          name,
+          timeZone,
+        },
       },
     });
 
-    // ✅ Return a success message and the created user (you can exclude password from response if you want)
-    return NextResponse.json({ message: 'User registered successfully!', user });
+    if (supabaseError) {
+      throw supabaseError;
+    }
+
+    // Step 2: Create a corresponding user record in Prisma
+    const newUser = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password, // Note: Store hashed passwords in production
+        timeZone,
+      },
+    });
+
+    return NextResponse.json(newUser, { status: 201 });
   } catch (error) {
-    console.error('[REGISTER ERROR]', error);
-    return NextResponse.json({ error: 'Registration failed' }, { status: 500 });
+    console.error('Registration error:', error);
+    return NextResponse.json({ error: error.message || 'Registration failed' }, { status: 500 });
   }
 }

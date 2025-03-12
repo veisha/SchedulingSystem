@@ -1,41 +1,56 @@
 'use client';
 
-import { signIn, useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import styles from './Login.module.css'; // Assuming you have a Login.module.css
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+import styles from './Login.module.css';
 
 export default function LoginPage() {
-  const { data: session } = useSession(); // relies on the top-level <SessionProvider>
   const router = useRouter();
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [form, setForm] = useState({ email: '', password: '' });
 
   // Redirect if already logged in
   useEffect(() => {
-    if (session) {
-      router.push('/dashboard');
-    }
-  }, [session, router]);
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        router.push('/dashboard');
+      }
+    };
+
+    checkSession();
+  }, [router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
+    if (!form.email || !form.password) {
+      setError('Please fill in all fields');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
     try {
-      const res = await signIn('credentials', {
-        redirect: false,
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: form.email,
         password: form.password,
       });
-  
-      if (res.error) {
-        setError('Invalid email or password');
-      } else {
-        router.push('/dashboard');
+
+      if (error) {
+        throw error;
       }
+
+      console.log('Login successful:', data);
+      router.push('/dashboard');
     } catch (error) {
-      console.error("Login error:", error);
-      setError('An unexpected error occurred');
+      console.error('Login error:', error);
+      setError(error.message || 'Invalid email or password');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -64,7 +79,9 @@ export default function LoginPage() {
           required
         />
 
-        <button type="submit" className={styles.button}>Sign In</button>
+        <button type="submit" className={styles.button} disabled={isLoading}>
+          {isLoading ? 'Signing In...' : 'Sign In'}
+        </button>
 
         <p className={styles.text}>
           Don&apos;t have an account?{' '}
