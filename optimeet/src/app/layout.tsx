@@ -2,9 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-// ✅ Import your SessionProviderWrapper here (adjust the path if necessary)
-import SessionProviderWrapper from './SessionProviderWrapper'; // or 'src/app/SessionProviderWrapper' if not relative
-
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -30,10 +27,8 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {/* ✅ Wrap everything in your SessionProvider */}
-        <SessionProviderWrapper>
-          {children}
-        </SessionProviderWrapper>
+        {/* ✅ Remove the SessionProviderWrapper */}
+        {children}
       </body>
     </html>
   );
