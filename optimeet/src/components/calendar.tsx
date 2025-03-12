@@ -323,11 +323,10 @@ const Calendar: React.FC = () => {
       setSelectedSlot(null);
     };
   
-    // Handle end time change
-    const handleEndTimeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-      const selectedEndHour = parseInt(e.target.value, 10);
-      const newEndDate = new Date(selectedSlot!.date);
-      newEndDate.setHours(selectedEndHour, 0, 0, 0); // Set the new end hour
+    // Handle end date and time change
+    const handleEndDateTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newEndDate = new Date(e.target.value); // Get the new end date and time from the input
+      newEndDate.setMinutes(0, 0); // Set minutes to 00
   
       setSelectedSlot((prev) => ({
         ...prev!,
@@ -338,13 +337,20 @@ const Calendar: React.FC = () => {
     // Handle form submission
     const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
+  
+      // Check if the end date is after the start date
+      if (selectedSlot!.endDate <= selectedSlot!.date) {
+        alert("End date must be after the start date.");
+        return;
+      }
+  
       const formData = new FormData(event.currentTarget);
       const scheduleData = {
         type: formData.get("type") as ScheduleType,
         title: formData.get("title") as string,
         description: formData.get("description") as string,
         startDateTime: selectedSlot!.date.toISOString(),
-        endDateTime: selectedSlot!.endDate.toISOString(), // Use the selected end time
+        endDateTime: selectedSlot!.endDate.toISOString(), // Use the selected end date
         isAllDay: formData.get("isAllDay") === "on",
         repeat: formData.get("repeat") ? JSON.parse(formData.get("repeat") as string) : null,
       };
@@ -487,20 +493,13 @@ const Calendar: React.FC = () => {
                 </label>
                 <label>
                   End Date:
-                  <select
+                  <input
+                    type="datetime-local"
                     name="endDateTime"
-                    value={selectedSlot.endDate.getHours()} // Use the hour from endDate
-                    onChange={handleEndTimeChange}
-                  >
-                    {hours.map((hour) => (
-                      <option key={hour} value={hour}>
-                        {new Date(0, 0, 0, hour).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </option>
-                    ))}
-                  </select>
+                    value={formatDateTimeLocal(selectedSlot.endDate)} // Use the helper function
+                    onChange={handleEndDateTimeChange} // Handle changes to the end date
+                    step="3600" // Restrict the input to whole hours (3600 seconds = 1 hour)
+                  />
                 </label>
                 <label>
                   All Day:
