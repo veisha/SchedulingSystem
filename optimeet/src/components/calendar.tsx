@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import styles from "./Calendar.module.css";
+import { supabase } from '@/lib/supabase'; // Adjust the import based on your project structure
 
 type CalendarView = "day" | "week" | "month" | "year";
 enum ScheduleType {
@@ -128,38 +129,52 @@ const Calendar: React.FC = () => {
     // Handle form submission
     const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
-  
+    
+      // Fetch the current user
+      const { data: { user } } = await supabase.auth.getUser();
+    
+      if (!user) {
+        alert("You must be logged in to add a schedule.");
+        return;
+      }
+    
+      const userId = user.id; // This is a string
+    
       // Check if the end date is after the start date
       if (selectedSlot!.endDate <= selectedSlot!.date) {
         alert("End date must be after the start date.");
         return;
       }
-  
+    
+      // Get form data
       const formData = new FormData(event.currentTarget);
       const scheduleData = {
         type: formData.get("type") as ScheduleType,
         title: formData.get("title") as string,
         description: formData.get("description") as string,
         startDateTime: selectedSlot!.date.toISOString(),
-        endDateTime: selectedSlot!.endDate.toISOString(), // Use the selected end date
+        endDateTime: selectedSlot!.endDate.toISOString(),
         isAllDay: formData.get("isAllDay") === "on",
         repeat: formData.get("repeat") ? JSON.parse(formData.get("repeat") as string) : null,
+        userId, // Use the user ID from Supabase
       };
-  
+    
       // Submit the schedule data to the backend
       try {
-        const response = await fetch("/api/schedules", {
+        const response = await fetch("/api/schedule", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(scheduleData),
         });
+    
         if (response.ok) {
           alert("Schedule added successfully!");
           closePopover();
         } else {
-          alert("Failed to add schedule.");
+          const errorData = await response.json();
+          alert(`Failed to add schedule: ${errorData.error}`);
         }
       } catch (error) {
         console.error("Error submitting schedule:", error);
