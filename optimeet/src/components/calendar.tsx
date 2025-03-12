@@ -28,6 +28,8 @@ const Calendar: React.FC = () => {
     setView(e.target.value as CalendarView);
   };
 
+  console.log(days);
+
   // For Month view: Generate all the days of the current month.
   useEffect(() => {
     if (view === "month") {
@@ -37,7 +39,6 @@ const Calendar: React.FC = () => {
       const lastDay = new Date(year, month + 1, 0);
       const daysArray: Date[] = [];
       console.log(firstDay);
-      console.log(days);
       for (let d = 1; d <= lastDay.getDate(); d++) {
         daysArray.push(new Date(year, month, d));
       }
