@@ -14,27 +14,32 @@ export const authOptions = {
       },
       async authorize(credentials) {
         const { email, password } = credentials;
-
-        const user = await prisma.user.findUnique({
-          where: { email }
-        });
-
-        if (!user) {
-          throw new Error("No user found with this email");
+      
+        try {
+          const user = await prisma.user.findUnique({
+            where: { email }
+          });
+      
+          if (!user) {
+            throw new Error("No user found with this email");
+          }
+      
+          const isValidPassword = await bcrypt.compare(password, user.password);
+      
+          if (!isValidPassword) {
+            throw new Error("Invalid password");
+          }
+      
+          return {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            timeZone: user.timeZone
+          };
+        } catch (error) {
+          console.error("Authorization error:", error);
+          throw new Error("Authorization failed");
         }
-
-        const isValidPassword = await bcrypt.compare(password, user.password);
-
-        if (!isValidPassword) {
-          throw new Error("Invalid password");
-        }
-
-        return {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          timeZone: user.timeZone
-        };
       }
     })
   ],
