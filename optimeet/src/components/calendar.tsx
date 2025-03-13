@@ -40,23 +40,81 @@ const Calendar: React.FC = () => {
 
   const [schedules, setSchedules] = useState([]);
 
+  const fetchSchedules = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+  
+    if (!user) {
+      console.log("User not authenticated");
+      return;
+    }
+  
+    const response = await fetch(`/api/schedule`);
+    const data = await response.json();
+  
+    setSchedules(data);
+  };
+  
   useEffect(() => {
-    const fetchSchedules = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        console.log("User not authenticated");
-        return;
-      }
-
-      const response = await fetch(`/api/schedule`); // Modify as needed
-      const data = await response.json();
-
-      setSchedules(data);
-    };
-
     fetchSchedules();
   }, []);
+
+  const handleAddSchedule = async ({
+    formData,
+    selectedSlot,
+    closePopover,
+  }: {
+    formData: FormData;
+    selectedSlot: { date: Date; hour: number; endDate: Date } | null;
+    closePopover: () => void;
+  }) => {
+    const { data: { user } } = await supabase.auth.getUser();
+  
+    if (!user) {
+      alert("You must be logged in to add a schedule.");
+      return;
+    }
+  
+    if (!selectedSlot) {
+      alert("No time slot selected.");
+      return;
+    }
+  
+    if (selectedSlot.endDate <= selectedSlot.date) {
+      alert("End date must be after the start date.");
+      return;
+    }
+  
+    const userId = user.id;
+  
+    const scheduleData = {
+      ...formData,
+      startDateTime: selectedSlot.date.toISOString(),
+      endDateTime: selectedSlot.endDate.toISOString(),
+      userId,
+    };
+  
+    try {
+      const response = await fetch("/api/schedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(scheduleData),
+      });
+  
+      if (response.ok) {
+        fetchSchedules();
+        alert("Schedule added successfully!");
+        closePopover();
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to add schedule: ${errorData.error}`);
+      }
+  
+      
+    } catch (error) {
+      console.error("Error submitting schedule:", error);
+      alert("An error occurred while adding the schedule.");
+    }
+  };
 
   // Update view state when the dropdown selection changes
   const handleViewChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -112,6 +170,7 @@ const Calendar: React.FC = () => {
     switch (view) {
       case "day":
         return renderDayView({
+          handleAddSchedule,
           currentDate,
           selectedSlot,
           setSelectedSlot,
@@ -170,10 +229,13 @@ const Calendar: React.FC = () => {
       </div>
     </div>
   );
+
+  
 };
 
 // Define the view components as pure functions
 const renderDayView = ({
+  handleAddSchedule,
   currentDate,
   selectedSlot,
   setSelectedSlot,
@@ -184,6 +246,15 @@ const renderDayView = ({
   getCurrentHour,
   schedules,
 }: {
+  handleAddSchedule: ({
+    formData,
+    selectedSlot,
+    closePopover,
+  }: {
+    formData: FormData;
+    selectedSlot: { date: Date; hour: number; endDate: Date } | null;
+    closePopover: () => void;
+  }) => void;
   currentDate: Date;
   selectedSlot: { date: Date; hour: number; endDate: Date } | null;
   setSelectedSlot: (slot: { date: Date; hour: number; endDate: Date } | null) => void;
@@ -243,47 +314,9 @@ const renderDayView = ({
 
   const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      alert("You must be logged in to add a schedule.");
-      return;
-    }
-
-    const userId = user.id;
-
-    if (selectedSlot!.endDate <= selectedSlot!.date) {
-      alert("End date must be after the start date.");
-      return;
-    }
-
-    const scheduleData = {
-      ...formData,
-      startDateTime: selectedSlot!.date.toISOString(),
-      endDateTime: selectedSlot!.endDate.toISOString(),
-      userId,
-    };
-
-    try {
-      const response = await fetch("/api/schedule", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(scheduleData),
-      });
-
-      if (response.ok) {
-        alert("Schedule added successfully!");
-        closePopover();
-      } else {
-        const errorData = await response.json();
-        alert(`Failed to add schedule: ${errorData.error}`);
-      }
-    } catch (error) {
-      console.error("Error submitting schedule:", error);
-      alert("An error occurred while adding the schedule.");
-    }
+    await handleAddSchedule({ formData, selectedSlot, closePopover });
   };
+  
 
   const formatDateTimeLocal = (date: Date) => {
     const year = date.getFullYear();
