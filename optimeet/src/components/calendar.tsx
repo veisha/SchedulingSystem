@@ -25,6 +25,15 @@ interface FormData {
   repeat: RepeatType | null;
 }
 
+interface Schedule {
+  id: string;              // optional but useful
+  title: string;
+  description?: string;
+  startDateTime: Date;              // start time
+  endDateTime: Date;           // end time
+}
+
+
 const Calendar: React.FC = () => {
   const [view, setView] = useState<CalendarView>("day");
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
@@ -38,7 +47,8 @@ const Calendar: React.FC = () => {
     repeat: null,
   });
 
-  const [schedules, setSchedules] = useState([]);
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
+
 
   const fetchSchedules = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -51,8 +61,16 @@ const Calendar: React.FC = () => {
     const response = await fetch(`/api/schedule`);
     const data = await response.json();
   
-    setSchedules(data);
+    const schedulesWithDates = data.map((schedule: any) => ({
+      ...schedule,
+      startDateTime: new Date(schedule.startDateTime),
+      endDateTime: new Date(schedule.endDateTime),
+    }));
+  
+    setSchedules(schedulesWithDates);
   };
+  
+  
   
   useEffect(() => {
     fetchSchedules();
@@ -67,54 +85,70 @@ const Calendar: React.FC = () => {
     selectedSlot: { date: Date; hour: number; endDate: Date } | null;
     closePopover: () => void;
   }) => {
+    if (!selectedSlot) {
+      alert("No time slot selected!");
+      return;
+    }
+
     const { data: { user } } = await supabase.auth.getUser();
-  
+
     if (!user) {
       alert("You must be logged in to add a schedule.");
       return;
     }
-  
-    if (!selectedSlot) {
-      alert("No time slot selected.");
-      return;
-    }
-  
-    if (selectedSlot.endDate <= selectedSlot.date) {
-      alert("End date must be after the start date.");
-      return;
-    }
-  
+
     const userId = user.id;
+
   
-    const scheduleData = {
-      ...formData,
-      startDateTime: selectedSlot.date.toISOString(),
-      endDateTime: selectedSlot.endDate.toISOString(),
-      userId,
-    };
+    const newStart = selectedSlot.date.getTime();
+    const newEnd = selectedSlot.endDate.getTime();
   
+    // ✅ Conflict checker:
+    const hasConflict = schedules.some((existing) => {
+      const existingStart = existing.startDateTime.getTime();
+      const existingEnd = existing.endDateTime.getTime();
+  
+      // Check overlap:
+      return newStart < existingEnd && newEnd > existingStart;
+    });
+  
+    if (hasConflict) {
+      alert("There's a conflict with another schedule! Please select a different time.");
+      return;
+    }
+  
+    // ✅ If no conflict, proceed to add the schedule:
     try {
       const response = await fetch("/api/schedule", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(scheduleData),
+        body: JSON.stringify({
+          type: formData.type,                   // Add this
+          title: formData.title,
+          description: formData.description,
+          startDateTime: selectedSlot.date,      // Correct naming
+          endDateTime: selectedSlot.endDate,     // Correct naming
+          isAllDay: formData.isAllDay || false,  // Optional, add if available
+          repeat: formData.repeat || 'None',     // Optional, add if available
+          userId             // ✅ This is required by the API!
+        }),
       });
+      
   
       if (response.ok) {
-        fetchSchedules();
+        fetchSchedules(); // Refresh the schedules
         alert("Schedule added successfully!");
         closePopover();
       } else {
-        const errorData = await response.json();
-        alert(`Failed to add schedule: ${errorData.error}`);
+        alert("Failed to add schedule!");
       }
-  
-      
     } catch (error) {
-      console.error("Error submitting schedule:", error);
+      console.error("Error adding schedule:", error);
       alert("An error occurred while adding the schedule.");
     }
   };
+  
+  
 
   // Update view state when the dropdown selection changes
   const handleViewChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -263,7 +297,7 @@ const renderDayView = ({
   goToPreviousDay: () => void;
   goToNextDay: () => void;
   getCurrentHour: () => number;
-  schedules: any[];
+  schedules: Schedule[];
 }) => {
 
   const hours = Array.from({ length: 24 }, (_, i) => i);
