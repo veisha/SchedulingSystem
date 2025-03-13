@@ -1,26 +1,9 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
-enum ScheduleType {
-  TASK = 'TASK',
-  APPOINTMENT = 'APPOINTMENT',
-  RESTDAY = 'RESTDAY',
-  BLOCK = 'BLOCK',
-}
-
-interface ScheduleData {
-  type: ScheduleType;
-  title: string;
-  description?: string;
-  startDateTime: string;
-  endDateTime: string;
-  isAllDay: boolean;
-  repeat?: any;
-  userId: string;
-}
-
-export async function POST(request: Request) {
+export async function POST(request) {
   try {
+    // Parse the request body
     const {
       type,
       title,
@@ -30,7 +13,7 @@ export async function POST(request: Request) {
       isAllDay,
       repeat,
       userId,
-    }: ScheduleData = await request.json();
+    } = await request.json();
 
     // Validate required fields
     if (!type || !title || !startDateTime || !endDateTime || !userId) {
@@ -56,7 +39,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(newEvent, { status: 201 });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error creating event:', error);
     return NextResponse.json(
       { error: error.message || 'Failed to create event' },
