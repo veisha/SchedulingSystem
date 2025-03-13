@@ -504,41 +504,52 @@ const renderWeekView = ({
     };
     
   
-    // Handle form submission
     const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
-  
+    
+      // Fetch the current user
+      const { data: { user } } = await supabase.auth.getUser();
+    
+      if (!user) {
+        alert("You must be logged in to add a schedule.");
+        return;
+      }
+    
+      const userId = user.id; // This is a string
+      console.log("User ID:", userId);
+    
       // Check if the end date is after the start date
       if (selectedSlot!.endDate <= selectedSlot!.date) {
         alert("End date must be after the start date.");
         return;
       }
-  
-      const formData = new FormData(event.currentTarget);
+    
+      // Prepare schedule data
       const scheduleData = {
-        type: formData.get("type") as ScheduleType,
-        title: formData.get("title") as string,
-        description: formData.get("description") as string,
+        ...formData,
         startDateTime: selectedSlot!.date.toISOString(),
-        endDateTime: selectedSlot!.endDate.toISOString(), // Use the selected end date
-        isAllDay: formData.get("isAllDay") === "on",
-        repeat: formData.get("repeat") ? JSON.parse(formData.get("repeat") as string) : null,
+        endDateTime: selectedSlot!.endDate.toISOString(),
+        userId, // Use the user ID from Supabase
       };
-  
+    
+      console.log("Schedule Data:", scheduleData);
+    
       // Submit the schedule data to the backend
       try {
-        const response = await fetch("/api/schedules", {
+        const response = await fetch("/api/schedule", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(scheduleData),
         });
+    
         if (response.ok) {
           alert("Schedule added successfully!");
           closePopover();
         } else {
-          alert("Failed to add schedule.");
+          const errorData = await response.json();
+          alert(`Failed to add schedule: ${errorData.error}`);
         }
       } catch (error) {
         console.error("Error submitting schedule:", error);
@@ -629,67 +640,107 @@ const renderWeekView = ({
           </div>
         </div>
   
-        {/* Popover for Adding Schedule */}
-        {selectedSlot && (
-          <div className={styles.popover}>
-            <div className={styles.popoverContent}>
-              <h3>Add Schedule</h3>
-              <form onSubmit={handleFormSubmit}>
-                <label>
-                  Type:
-                  <select name="type" required>
-                    <option value={ScheduleType.TASK}>Task</option>
-                    <option value={ScheduleType.APPOINTMENT}>Appointment</option>
-                    <option value={ScheduleType.RESTDAY}>Rest Day</option>
-                    <option value={ScheduleType.BLOCK}>Block</option>
-                  </select>
-                </label>
-                <label>
-                  Title:
-                  <input type="text" name="title" required />
-                </label>
-                <label>
-                  Description:
-                  <textarea name="description" />
-                </label>
-                <label>
-                  Start Date:
-                  <input
-                    type="datetime-local"
-                    name="startDateTime"
-                    value={formatDateTimeLocal(selectedSlot.date)} // Use the helper function
-                    disabled
-                  />
-                </label>
-                <label>
-                  End Date:
-                  <input
-                    type="datetime-local"
-                    name="endDateTime"
-                    value={formatDateTimeLocal(selectedSlot.endDate)} // Use the helper function
-                    onChange={handleEndDateTimeChange} // Handle changes to the end date
-                    step="3600" // Restrict the input to whole hours (3600 seconds = 1 hour)
-                  />
-                </label>
-                <label>
-                  All Day:
-                  <input type="checkbox" name="isAllDay" />
-                </label>
-                <label>
-                  Repeat:
-                  <select name="repeat">
-                    <option value="">None</option>
-                    <option value='{"frequency": "DAILY"}'>Daily</option>
-                    <option value='{"frequency": "WEEKLY"}'>Weekly</option>
-                    <option value='{"frequency": "MONTHLY"}'>Monthly</option>
-                  </select>
-                </label>
-                <button type="submit">Add Schedule</button>
-                <button type="button" onClick={closePopover}>Cancel</button>
-              </form>
-            </div>
-          </div>
-        )}
+            {/* Popover for Adding Schedule */}
+    {selectedSlot && (
+      <div className={styles.popover}>
+        <div className={styles.popoverContent}>
+          <h3>Add Schedule</h3>
+          <form onSubmit={handleFormSubmit}>
+            <label>
+              Type:
+              <select
+                name="type"
+                value={formData.type}
+                onChange={(e) =>
+                  setFormData({ ...formData, type: e.target.value as ScheduleType })
+                }
+                required
+              >
+                <option value={ScheduleType.TASK}>Task</option>
+                <option value={ScheduleType.APPOINTMENT}>Appointment</option>
+                <option value={ScheduleType.RESTDAY}>Rest Day</option>
+                <option value={ScheduleType.BLOCK}>Block</option>
+              </select>
+            </label>
+            <label>
+              Title:
+              <input
+                type="text"
+                name="title"
+                value={formData.title}
+                onChange={(e) =>
+                  setFormData({ ...formData, title: e.target.value })
+                }
+                required
+              />
+            </label>
+            <label>
+              Description:
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
+              />
+            </label>
+            <label>
+              Start Date:
+              <input
+                type="datetime-local"
+                name="startDateTime"
+                value={formatDateTimeLocal(selectedSlot.date)}
+                disabled
+              />
+            </label>
+            <label>
+              End Date:
+              <input
+                type="datetime-local"
+                name="endDateTime"
+                value={formatDateTimeLocal(selectedSlot.endDate)} // Use the helper function
+                onChange={handleEndDateTimeChange} // Handle changes to the end date
+                step="3600" // Restrict the input to whole hours (3600 seconds = 1 hour)
+              />
+            </label>
+            <label>
+              All Day:
+              <input
+                type="checkbox"
+                name="isAllDay"
+                checked={formData.isAllDay}
+                onChange={(e) =>
+                  setFormData({ ...formData, isAllDay: e.target.checked })
+                }
+              />
+            </label>
+            <label>
+              Repeat:
+              <select
+                name="repeat"
+                value={formData.repeat ? formData.repeat.frequency : "NONE"} // Use "NONE" as the default value
+                onChange={(e) => {
+                  const value = e.target.value as "NONE" | "DAILY" | "WEEKLY" | "MONTHLY"; // Explicitly type the value
+                  setFormData({
+                    ...formData,
+                    repeat: value !== "NONE" ? { frequency: value } : null, // Store as an object or null
+                  });
+                }}
+              >
+                <option value="NONE">None</option>
+                <option value="DAILY">Daily</option>
+                <option value="WEEKLY">Weekly</option>  
+                <option value="MONTHLY">Monthly</option>
+              </select>
+            </label>
+            <button type="submit">Add Schedule</button>
+            <button type="button" onClick={closePopover}>
+              Cancel
+            </button>
+          </form>
+        </div>
+      </div>
+    )}
       </div>
     );
 
