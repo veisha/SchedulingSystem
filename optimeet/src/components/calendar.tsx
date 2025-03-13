@@ -28,7 +28,7 @@ interface FormData {
 const Calendar: React.FC = () => {
   const [view, setView] = useState<CalendarView>("day");
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
-  const [days, setDays] = useState<Date[]>([]);
+  const [, setDays] = useState<Date[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<{ date: Date; hour: number; endDate: Date } | null>(null);
   const [formData, setFormData] = useState<FormData>({
     type: "TASK",
@@ -48,7 +48,7 @@ const Calendar: React.FC = () => {
     if (view === "month") {
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth();
-      const firstDay = new Date(year, month, 1);
+      // const firstDay = new Date(year, month, 1);
       const lastDay = new Date(year, month + 1, 0);
       const daysArray: Date[] = [];
       for (let d = 1; d <= lastDay.getDate(); d++) {
