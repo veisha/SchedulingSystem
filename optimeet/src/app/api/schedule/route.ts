@@ -8,7 +8,6 @@ enum ScheduleType {
   BLOCK = 'BLOCK',
 }
 
-// Define the type for the request body
 interface ScheduleData {
   type: ScheduleType;
   title: string;
@@ -16,15 +15,12 @@ interface ScheduleData {
   startDateTime: string;
   endDateTime: string;
   isAllDay: boolean;
-  repeat?: any; // Use a more specific type if possible
+  repeat?: any;
   userId: string;
 }
 
-
-
 export async function POST(request: Request) {
   try {
-    // Parse the request body
     const {
       type,
       title,
@@ -47,7 +43,7 @@ export async function POST(request: Request) {
     // Save the event to the database
     const newEvent = await prisma.schedule.create({
       data: {
-        type, // This should now match the ScheduleType enum
+        type,
         title,
         description,
         startDateTime: new Date(startDateTime),
@@ -55,7 +51,7 @@ export async function POST(request: Request) {
         isAllDay,
         repeat,
         status: 'CONFIRMED', // Default status
-        userId, // This should now be a string
+        userId, // Associate the event with the logged-in user
       },
     });
 

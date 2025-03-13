@@ -126,39 +126,46 @@ const Calendar: React.FC = () => {
       }));
     };
   
+    // State for form data
+    const [formData, setFormData] = useState({
+      type: ScheduleType.TASK,
+      title: "",
+      description: "",
+      isAllDay: false,
+      repeat: null,
+    });
+  
     // Handle form submission
     const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
-    
+  
       // Fetch the current user
       const { data: { user } } = await supabase.auth.getUser();
-    
+  
       if (!user) {
         alert("You must be logged in to add a schedule.");
         return;
       }
-    
+  
       const userId = user.id; // This is a string
-    
+      console.log("User ID:", userId);
+  
       // Check if the end date is after the start date
       if (selectedSlot!.endDate <= selectedSlot!.date) {
         alert("End date must be after the start date.");
         return;
       }
-    
-      // Get form data
-      const formData = new FormData(event.currentTarget);
+  
+      // Prepare schedule data
       const scheduleData = {
-        type: formData.get("type") as ScheduleType,
-        title: formData.get("title") as string,
-        description: formData.get("description") as string,
+        ...formData,
         startDateTime: selectedSlot!.date.toISOString(),
         endDateTime: selectedSlot!.endDate.toISOString(),
-        isAllDay: formData.get("isAllDay") === "on",
-        repeat: formData.get("repeat") ? JSON.parse(formData.get("repeat") as string) : null,
         userId, // Use the user ID from Supabase
       };
-    
+  
+      console.log("Schedule Data:", scheduleData);
+  
       // Submit the schedule data to the backend
       try {
         const response = await fetch("/api/schedule", {
@@ -168,7 +175,7 @@ const Calendar: React.FC = () => {
           },
           body: JSON.stringify(scheduleData),
         });
-    
+  
         if (response.ok) {
           alert("Schedule added successfully!");
           closePopover();
@@ -237,7 +244,14 @@ const Calendar: React.FC = () => {
               <form onSubmit={handleFormSubmit}>
                 <label>
                   Type:
-                  <select name="type" required>
+                  <select
+                    name="type"
+                    value={formData.type}
+                    onChange={(e) =>
+                      setFormData({ ...formData, type: e.target.value as ScheduleType })
+                    }
+                    required
+                  >
                     <option value={ScheduleType.TASK}>Task</option>
                     <option value={ScheduleType.APPOINTMENT}>Appointment</option>
                     <option value={ScheduleType.RESTDAY}>Rest Day</option>
@@ -246,11 +260,25 @@ const Calendar: React.FC = () => {
                 </label>
                 <label>
                   Title:
-                  <input type="text" name="title" required />
+                  <input
+                    type="text"
+                    name="title"
+                    value={formData.title}
+                    onChange={(e) =>
+                      setFormData({ ...formData, title: e.target.value })
+                    }
+                    required
+                  />
                 </label>
                 <label>
                   Description:
-                  <textarea name="description" />
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
+                  />
                 </label>
                 <label>
                   Start Date:
@@ -273,11 +301,27 @@ const Calendar: React.FC = () => {
                 </label>
                 <label>
                   All Day:
-                  <input type="checkbox" name="isAllDay" />
+                  <input
+                    type="checkbox"
+                    name="isAllDay"
+                    checked={formData.isAllDay}
+                    onChange={(e) =>
+                      setFormData({ ...formData, isAllDay: e.target.checked })
+                    }
+                  />
                 </label>
                 <label>
                   Repeat:
-                  <select name="repeat">
+                  <select
+                    name="repeat"
+                    value={formData.repeat ? JSON.stringify(formData.repeat) : ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        repeat: e.target.value ? JSON.parse(e.target.value) : null,
+                      })
+                    }
+                  >
                     <option value="">None</option>
                     <option value='{"frequency": "DAILY"}'>Daily</option>
                     <option value='{"frequency": "WEEKLY"}'>Weekly</option>
@@ -285,7 +329,9 @@ const Calendar: React.FC = () => {
                   </select>
                 </label>
                 <button type="submit">Add Schedule</button>
-                <button type="button" onClick={closePopover}>Cancel</button>
+                <button type="button" onClick={closePopover}>
+                  Cancel
+                </button>
               </form>
             </div>
           </div>
