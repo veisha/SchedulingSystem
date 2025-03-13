@@ -67,11 +67,21 @@ const Calendar: React.FC = () => {
     const response = await fetch(`/api/schedule`);
     const data = await response.json();
   
-    const schedulesWithDates: Schedule[] = data.map((schedule: Schedule) => ({
-      ...schedule,
-      startDateTime: new Date(schedule.startDateTime),
-      endDateTime: new Date(schedule.endDateTime),
-    }));
+    console.log("Raw data from API:", data);
+
+    const schedulesWithDates: Schedule[] = data.map((schedule: Schedule) => {
+    const start = new Date(schedule.startDateTime);
+    const end = new Date(schedule.endDateTime);
+
+    console.log("Mapped Schedule:", { ...schedule, start, end });
+
+  return {
+    ...schedule,
+    startDateTime: start,
+    endDateTime: end,
+  };
+});
+
     
   
     setSchedules(schedulesWithDates);
