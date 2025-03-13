@@ -26,12 +26,18 @@ interface FormData {
 }
 
 interface Schedule {
-  id: string;              // optional but useful
+  id: string;
+  type: string;
   title: string;
   description?: string;
-  startDateTime: Date;              // start time
-  endDateTime: Date;           // end time
+  startDateTime: Date; 
+  endDateTime: Date;   
+  isAllDay?: boolean;
+  repeat?: string;
+  status?: string;
+  userId: string;
 }
+
 
 
 const Calendar: React.FC = () => {
@@ -61,11 +67,12 @@ const Calendar: React.FC = () => {
     const response = await fetch(`/api/schedule`);
     const data = await response.json();
   
-    const schedulesWithDates = data.map((schedule: any) => ({
+    const schedulesWithDates: Schedule[] = data.map((schedule: Schedule) => ({
       ...schedule,
       startDateTime: new Date(schedule.startDateTime),
       endDateTime: new Date(schedule.endDateTime),
     }));
+    
   
     setSchedules(schedulesWithDates);
   };
