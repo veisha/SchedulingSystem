@@ -477,6 +477,8 @@
 
 .occupiedSlot {
   background-color: rgba(100, 181, 246, 0.4); /* Light blue */
+  color: #c62828; /* Dark red text color for occupied slots */
+  pointer-events: none; /* Disable pointer events for occupied slots */
 }
 
 .eventSlot {

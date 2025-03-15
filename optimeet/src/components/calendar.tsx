@@ -382,6 +382,15 @@ const renderDayView = ({
     return slotTime < now;
   };
 
+  // Function to check if a time slot is occupied
+  const isOccupiedTimeSlot = (hour: number) => {
+    return schedulesForTheDay.some((schedule) => {
+      const startHour = new Date(schedule.startDateTime).getHours();
+      const endHour = new Date(schedule.endDateTime).getHours();
+      return hour >= startHour && hour < endHour;
+    });
+  };
+
   return (
     <div className={styles.dayView}>
       {/* Header */}
@@ -414,19 +423,14 @@ const renderDayView = ({
         {/* Events Column */}
         <div className={styles.eventsColumn}>
           {hours.map((hour) => {
-            const isOccupied = schedulesForTheDay.some((schedule) => {
-              const startHour = new Date(schedule.startDateTime).getHours();
-              const endHour = new Date(schedule.endDateTime).getHours();
-              return hour >= startHour && hour < endHour;
-            });
-
+            const isOccupied = isOccupiedTimeSlot(hour); // Check if the time slot is occupied
             const isSelected = selectedSlot && selectedSlot.hour === hour;
             const isPast = isPastTimeSlot(hour); // Check if the time slot is in the past
 
             return (
               <div
                 key={hour}
-                onClick={!isPast ? () => handleEventSlotClick(hour) : undefined} // Disable click for past slots
+                onClick={!isPast && !isOccupied ? () => handleEventSlotClick(hour) : undefined} // Disable click for past and occupied slots
                 className={`
                   ${styles.eventSlot}
                   ${hour === currentHour ? styles.currentTime : ""}
@@ -434,7 +438,7 @@ const renderDayView = ({
                   ${isSelected ? styles.selectedSlot : ""}
                   ${isPast ? styles.pastSlot : ""} // Apply a different style for past slots
                 `}
-                style={{ cursor: isPast ? "not-allowed" : "pointer" }} // Change cursor for past slots
+                style={{ cursor: isPast || isOccupied ? "not-allowed" : "pointer" }} // Change cursor for past and occupied slots
               >
                 {/* You can show an event title or icon here */}
                 {isOccupied && <span className={styles.eventLabel}>Scheduled</span>}
