@@ -6,12 +6,19 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase"; // Correct import path
 import { User } from "@supabase/supabase-js"; // Import User type
 import Calendar from "@/components/calendar"; // Import the calendar component
+import MySchedules from "@/components/mySchedules"; // Import MySchedules component
+import AddSchedule from "@/components/addSchedule"; // Import AddSchedule component
+import Invitations from "@/components/invitations"; // Import Invitations component
+import Settings from "@/components/settings"; // Import Settings component
 import styles from "./Dashboard.module.css"; // All styles go here
 
 export default function Dashboard() {
   const router = useRouter();
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [user, setUser] = useState<User | null>(null); // Explicitly define the type
+  const [currentContent, setCurrentContent] = useState<
+    "calendar" | "mySchedules" | "addSchedule" | "invitations" | "settings"
+  >("calendar");
 
   const sidebarRef = useRef<HTMLDivElement>(null); // Define type for sidebar
   const headerRef = useRef<HTMLDivElement>(null); // Define type for header
@@ -110,33 +117,48 @@ export default function Dashboard() {
           <nav className={styles.sidebarNavContainer}>
             <ul className={styles.sidebarNavList}>
               <li className={styles.sidebarNavItem}>
-                <Link href="/dashboard" className={styles.sidebarNavLink}>
+                <button
+                  onClick={() => setCurrentContent("calendar")}
+                  className={styles.sidebarNavLink}
+                >
                   Dashboard
-                </Link>
+                </button>
               </li>
 
               <li className={styles.sidebarNavItem}>
-                <Link href="/meetings" className={styles.sidebarNavLink}>
-                  My Meetings
-                </Link>
+                <button
+                  onClick={() => setCurrentContent("mySchedules")}
+                  className={styles.sidebarNavLink}
+                >
+                  My Schedule
+                </button>
               </li>
 
               <li className={styles.sidebarNavItem}>
-                <Link href="/meetings/create" className={styles.sidebarNavLink}>
-                  Create Meeting
-                </Link>
+                <button
+                  onClick={() => setCurrentContent("addSchedule")}
+                  className={styles.sidebarNavLink}
+                >
+                  Add Schedule
+                </button>
               </li>
 
               <li className={styles.sidebarNavItem}>
-                <Link href="/invitations" className={styles.sidebarNavLink}>
+                <button
+                  onClick={() => setCurrentContent("invitations")}
+                  className={styles.sidebarNavLink}
+                >
                   Invitations
-                </Link>
+                </button>
               </li>
 
               <li className={styles.sidebarNavItem}>
-                <Link href="/settings" className={styles.sidebarNavLink}>
+                <button
+                  onClick={() => setCurrentContent("settings")}
+                  className={styles.sidebarNavLink}
+                >
                   Settings
-                </Link>
+                </button>
               </li>
 
               {/* Logout Button */}
@@ -155,7 +177,11 @@ export default function Dashboard() {
 
       {/* Content Area */}
       <div className={styles.content}>
-        <Calendar />
+        {currentContent === "calendar" && <Calendar />}
+        {currentContent === "mySchedules" && <MySchedules />}
+        {currentContent === "addSchedule" && <AddSchedule />}
+        {currentContent === "invitations" && <Invitations />}
+        {currentContent === "settings" && <Settings />}
       </div>
     </div>
   );
