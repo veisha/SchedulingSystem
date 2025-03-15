@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import styles from "./mySchedules.module.css";
 import { supabase } from '@/lib/supabase'; // Adjust the import path to your Supabase client
-import { User } from '@supabase/supabase-js'; // Import the User type from Supabase
 
 // Define the type for a schedule
 interface Schedule {
