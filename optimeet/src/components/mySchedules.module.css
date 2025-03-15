@@ -13,4 +13,37 @@
   .container p {
     font-size: 16px;
     color: #666;
+  }.container {
+    padding: 20px;
+  }
+  
+  .noSchedules {
+    font-size: 1.2em;
+    color: #666;
+    text-align: center;
+    margin-top: 20px;
+  }
+  
+  .scheduleList {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  .scheduleItem {
+    background: #f9f9f9;
+    margin: 10px 0;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .scheduleItem h2 {
+    margin: 0 0 10px 0;
+    font-size: 1.5em;
+    color: #333;
+  }
+  
+  .scheduleItem p {
+    margin: 5px 0;
+    color: #555;
   }
