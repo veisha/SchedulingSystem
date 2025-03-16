@@ -509,3 +509,11 @@
   color: #999; /* Dimmed text color for past slots */
   pointer-events: none; /* Disable pointer events for past slots */
 }
+
+.errorMessage {
+  color: red;
+  background-color: #ffebee;
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 20px;
+}

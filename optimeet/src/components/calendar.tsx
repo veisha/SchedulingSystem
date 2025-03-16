@@ -93,7 +93,7 @@ const Calendar: React.FC = () => {
       const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
-        console.log("User not authenticated");
+        console.log(error);
         return;
       }
 
