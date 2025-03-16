@@ -45,6 +45,7 @@ const Calendar: React.FC = () => {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [, setDays] = useState<Date[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<{ date: Date; hour: number; endDate: Date } | null>(null);
+  const [error, setError] = useState<string | null>(null); // Define error state
   const [formData, setFormData] = useState<FormData>({
     type: "TASK",
     title: "",
@@ -56,41 +57,51 @@ const Calendar: React.FC = () => {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
 
 
-  const fetchSchedules = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-  
-    if (!user) {
-      console.log("User not authenticated");
-      return;
+  const fetchSchedules = async (userId: string) => {
+    try {
+      const response = await fetch(`/api/schedule?userId=${userId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch schedules');
+      }
+
+      const data = await response.json();
+      console.log("Raw data from API:", data);
+
+      // Map the schedules to include Date objects
+      const schedulesWithDates: Schedule[] = data.map((schedule: Schedule) => {
+        const start = new Date(schedule.startDateTime);
+        const end = new Date(schedule.endDateTime);
+
+        console.log("Mapped Schedule:", { ...schedule, start, end });
+
+        return {
+          ...schedule,
+          startDateTime: start,
+          endDateTime: end,
+        };
+      });
+
+      setSchedules(schedulesWithDates);
+    } catch (error) {
+      console.error("Error fetching schedules:", error);
+      setError(error instanceof Error ? error.message : 'An unknown error occurred');
     }
-  
-    const response = await fetch(`/api/schedule`);
-    const data = await response.json();
-  
-    console.log("Raw data from API:", data);
-
-    const schedulesWithDates: Schedule[] = data.map((schedule: Schedule) => {
-    const start = new Date(schedule.startDateTime);
-    const end = new Date(schedule.endDateTime);
-
-    console.log("Mapped Schedule:", { ...schedule, start, end });
-
-  return {
-    ...schedule,
-    startDateTime: start,
-    endDateTime: end,
   };
-});
 
-    
-  
-    setSchedules(schedulesWithDates);
-  };
-  
-  
-  
   useEffect(() => {
-    fetchSchedules();
+    const fetchSchedulesForAuthenticatedUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        console.log("User not authenticated");
+        return;
+      }
+
+      // Fetch schedules for the authenticated user
+      await fetchSchedules(user.id);
+    };
+
+    fetchSchedulesForAuthenticatedUser();
   }, []);
 
   const handleAddSchedule = async ({
@@ -153,7 +164,7 @@ const Calendar: React.FC = () => {
       
   
       if (response.ok) {
-        fetchSchedules(); // Refresh the schedules
+        fetchSchedules(userId); // Refresh the schedules
         alert("Schedule added successfully!");
         closePopover();
       } else {
