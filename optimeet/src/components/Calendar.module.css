@@ -508,6 +508,11 @@
   background-color: #d5d5d5; /* Light gray background for past slots */
   color: #999; /* Dimmed text color for past slots */
   pointer-events: none; /* Disable pointer events for past slots */
+  cursor: not-allowed;
+}
+
+.pastMonth{
+  color: #007bff;
 }
 
 .errorMessage {

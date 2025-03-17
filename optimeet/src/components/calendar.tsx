@@ -614,8 +614,8 @@ const renderWeekView = ({
   const currentYear = now.getFullYear();
 
   // Check if the current day falls within the displayed week
-  const isCurrentWeek =
-    now >= startOfWeek && now < new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000);
+  // const isCurrentWeek =
+  //   now >= startOfWeek && now < new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000);
 
   // Handle event slot click
   const handleEventSlotClick = (dayIndex: number, hour: number) => {
@@ -1124,7 +1124,7 @@ const renderYearView = ({
             <div
               key={monthIndex}
               className={`${styles.yearMonth} ${
-                isPastMonth(monthIndex) ? styles.pastSlot : ""
+                isPastMonth(monthIndex) ? styles.pastMonth  : ""
               }`}
               onClick={!isPastMonth(monthIndex) ? () => handleMonthClick(monthIndex) : undefined} // Disable click for past months
               style={{ cursor: isPastMonth(monthIndex) ? "not-allowed" : "pointer" }} // Change cursor for past months
