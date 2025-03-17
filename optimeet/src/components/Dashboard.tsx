@@ -2,36 +2,38 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback, useRef } from "react";
-import { supabase } from "@/lib/supabase"; // Correct import path
-import { User } from "@supabase/supabase-js"; // Import User type
-import Calendar from "@/components/calendar"; // Import the calendar component
-import MySchedules from "@/components/mySchedules"; // Import MySchedules component
-import AddSchedule from "@/components/addSchedule"; // Import AddSchedule component
-import Invitations from "@/components/invitations"; // Import Invitations component
-import Settings from "@/components/settings"; // Import Settings component
-import styles from "./Dashboard.module.css"; // All styles go here
+import { supabase } from "@/lib/supabase";
+import { User } from "@supabase/supabase-js";
+import Calendar from "@/components/calendar";
+import MySchedules from "@/components/mySchedules";
+import AddSchedule from "@/components/addSchedule";
+import Invitations from "@/components/invitations";
+import Settings from "@/components/settings";
+import styles from "./Dashboard.module.css";
 
 export default function Dashboard() {
   const router = useRouter();
   const [sidebarVisible, setSidebarVisible] = useState(true);
-  const [user, setUser] = useState<User | null>(null); // Explicitly define the type
+  const [user, setUser] = useState<User | null>(null);
   const [currentContent, setCurrentContent] = useState<
     "calendar" | "mySchedules" | "addSchedule" | "invitations" | "settings"
   >("calendar");
+  const [currentDateTime, setCurrentDateTime] = useState<Date>(new Date());
+  const [calendarView, setCalendarView] = useState<"day" | "week" | "month" | "year">("day"); // Lift the view state
 
-  const sidebarRef = useRef<HTMLDivElement>(null); // Define type for sidebar
-  const headerRef = useRef<HTMLDivElement>(null); // Define type for header
-  const buttonRef = useRef<HTMLButtonElement>(null); // Define type for button
-  const containerRef = useRef<HTMLDivElement>(null); // Define type for container
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Check session on component mount
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        router.push("/login"); // Redirect to login if no session
+        router.push("/login");
       } else {
-        setUser(session.user); // Set user data
+        setUser(session.user);
       }
     };
 
@@ -40,8 +42,8 @@ export default function Dashboard() {
 
   // Handle logout
   const handleLogout = async () => {
-    await supabase.auth.signOut(); // Sign out with Supabase
-    router.push("/login"); // Redirect to login
+    await supabase.auth.signOut();
+    router.push("/login");
   };
 
   // Adjust button position
@@ -51,15 +53,15 @@ export default function Dashboard() {
     const button = buttonRef.current;
 
     if (sidebar && header && button) {
-      const headerHeight = header.offsetHeight; // No more type error
+      const headerHeight = header.offsetHeight;
 
       if (!sidebarVisible) {
-        button.style.left = "0"; // No more type error
+        button.style.left = "0";
       } else {
-        button.style.left = `${-10}px`; // No more type error
+        button.style.left = `${-10}px`;
       }
 
-      button.style.top = `${headerHeight / 2}px`; // No more type error
+      button.style.top = `${headerHeight / 2}px`;
     }
   }, [sidebarVisible]);
 
@@ -82,6 +84,42 @@ export default function Dashboard() {
     };
   }, [adjustButtonPosition]);
 
+  // Function to update current date and time
+  const updateDateTime = (dateTime: Date) => {
+    setCurrentDateTime(dateTime);
+  };
+
+  // Format the header display based on the calendar view
+  const formatHeaderDisplay = () => {
+    switch (calendarView) {
+      case "day":
+        return currentDateTime.toLocaleDateString("en-US", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+      case "week":
+        const startOfWeek = new Date(currentDateTime);
+        startOfWeek.setDate(currentDateTime.getDate() - currentDateTime.getDay());
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+        return `${startOfWeek.toLocaleDateString()} - ${endOfWeek.toLocaleDateString()}`;
+      case "month":
+        return currentDateTime.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+        });
+      case "year":
+        return currentDateTime.toLocaleDateString("en-US", {
+          year: "numeric",
+        });
+      default:
+        return currentDateTime.toLocaleString();
+    }
+  };
+
   return (
     <div
       ref={containerRef}
@@ -91,7 +129,7 @@ export default function Dashboard() {
     >
       {/* Header */}
       <div ref={headerRef} className={styles.header}>
-        Header
+        <div>{formatHeaderDisplay()}</div> {/* Display formatted date/time */}
         <button ref={buttonRef} onClick={handleToggleSidebar}>
           =
         </button>
@@ -176,7 +214,13 @@ export default function Dashboard() {
 
       {/* Content Area */}
       <div className={styles.content}>
-        {currentContent === "calendar" && <Calendar />}
+        {currentContent === "calendar" && (
+          <Calendar
+            updateDateTime={updateDateTime}
+            view={calendarView}
+            setView={setCalendarView}
+          />
+        )}
         {currentContent === "mySchedules" && <MySchedules />}
         {currentContent === "addSchedule" && <AddSchedule />}
         {currentContent === "invitations" && <Invitations />}

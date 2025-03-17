@@ -38,10 +38,13 @@ interface Schedule {
   userId: string;
 }
 
+interface CalendarProps {
+  updateDateTime: (dateTime: Date) => void; // Add this prop
+  view: CalendarView; // Add this prop
+  setView: (view: CalendarView) => void; // Add this prop
+}
 
-
-const Calendar: React.FC = () => {
-  const [view, setView] = useState<CalendarView>("day");
+const Calendar: React.FC<CalendarProps> = ({ updateDateTime, view, setView }) => {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [, setDays] = useState<Date[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<{ date: Date; hour: number; endDate: Date } | null>(null);
@@ -56,6 +59,10 @@ const Calendar: React.FC = () => {
 
   const [schedules, setSchedules] = useState<Schedule[]>([]);
 
+  // Notify the parent component of date changes
+  useEffect(() => {
+    updateDateTime(currentDate);
+  }, [currentDate, updateDateTime]);
 
   const fetchSchedules = async (userId: string) => {
     try {
@@ -127,24 +134,23 @@ const Calendar: React.FC = () => {
 
     const userId = user.id;
 
-  
     const newStart = selectedSlot.date.getTime();
     const newEnd = selectedSlot.endDate.getTime();
-  
+
     // ✅ Conflict checker:
     const hasConflict = schedules.some((existing) => {
       const existingStart = existing.startDateTime.getTime();
       const existingEnd = existing.endDateTime.getTime();
-  
+
       // Check overlap:
       return newStart < existingEnd && newEnd > existingStart;
     });
-  
+
     if (hasConflict) {
       alert("There's a conflict with another schedule! Please select a different time.");
       return;
     }
-  
+
     // ✅ If no conflict, proceed to add the schedule:
     try {
       const response = await fetch("/api/schedule", {
@@ -161,8 +167,7 @@ const Calendar: React.FC = () => {
           userId             // ✅ This is required by the API!
         }),
       });
-      
-  
+
       if (response.ok) {
         fetchSchedules(userId); // Refresh the schedules
         alert("Schedule added successfully!");
@@ -175,12 +180,11 @@ const Calendar: React.FC = () => {
       alert("An error occurred while adding the schedule.");
     }
   };
-  
-  
 
   // Update view state when the dropdown selection changes
   const handleViewChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setView(e.target.value as CalendarView);
+    const newView = e.target.value as CalendarView;
+    setView(newView); // Update the view in the parent component
   };
 
   // For Month view: Generate all the days of the current month.
@@ -292,8 +296,6 @@ const Calendar: React.FC = () => {
       </div>
     </div>
   );
-
-  
 };
 
 const renderDayView = ({
