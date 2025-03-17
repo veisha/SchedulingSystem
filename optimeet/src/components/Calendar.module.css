@@ -47,24 +47,31 @@
      Navigation buttons of the calendar view headers
      =============================== */
 
-  .navigationButtons {
-    margin-top: 0.5rem; /* 8px */
-  }
-  
-  .navigationButtons button {
-    padding: 0.5rem 1rem; /* 8px 16px */
-    margin: 0 0.5rem; /* 8px */
-    background-color: #899878;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  
-  .navigationButtons button:hover {
-    background-color: #758266;
-  }
+     .navigationButtons {
+      margin-top: 0.5rem; /* 8px */
+      display: flex;
+      gap: 0.5rem; /* Add spacing between buttons */
+    }
+    
+    .navigationButtons button {
+      padding: 0; /* Remove padding */
+      margin: 0; /* Remove margin */
+      background-color: transparent; /* Remove background color */
+      border-radius: 100%;
+      cursor: pointer;
+      transition: opacity 0.3s ease;
+
+    }
+    
+    .navigationButtons button:hover {
+      opacity: 0.8; /* Add hover effect */
+      background-color: #afafaf;
+    }
+    
+    .navigationButtons button img {
+      width: 32px; /* Adjust image size as needed */
+      height: 32px; /* Adjust image size as needed */
+    }
 
   /* ===============================
    DAY VIEW
@@ -244,7 +251,6 @@
   margin-bottom: 0.625rem; /* 10px */
   display: flex;
   flex-direction: column;
-  align-items: center;
 }
 
 .monthHeader h2 {
@@ -301,7 +307,6 @@
     margin-bottom: 0.625rem; /* 10px */
     display: flex;
     flex-direction: column;
-    align-items: center;
   }
   
   .yearViewHeader h2 {

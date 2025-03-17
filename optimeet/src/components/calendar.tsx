@@ -412,8 +412,12 @@ const renderDayView = ({
         <h2>{currentDay}</h2>
         <p>{currentDateFormatted}</p>
         <div className={styles.navigationButtons}>
-          <button onClick={goToPreviousDay}>Previous Day</button>
-          <button onClick={goToNextDay}>Next Day</button>
+          <button onClick={goToPreviousDay}>
+            <img src="/back.png" alt="Previous Day" />
+          </button>
+          <button onClick={goToNextDay}>
+            <img src="/next.png" alt="Next Day" />
+          </button>
         </div>
       </div>
 
@@ -725,22 +729,22 @@ const renderWeekView = ({
     <div className={styles.weekView}>
       {/* Header for Week View */}
       <div className={styles.weekViewHeader}>
-        <h2>
-          {startOfWeek.toLocaleString("default", { month: "short", day: "numeric" })} -{" "}
-          {new Date(startOfWeek.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleString("default", {
-            month: "short",
-            day: "numeric",
-          })}
-        </h2>
-        <div className={styles.navigationButtons}>
-          <button onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() - 7)))}>
-            Previous Week
-          </button>
-          <button onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() + 7)))}>
-            Next Week
-          </button>
-        </div>
+      <h2>
+        {startOfWeek.toLocaleString("default", { month: "short", day: "numeric" })} -{" "}
+        {new Date(startOfWeek.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleString("default", {
+          month: "short",
+          day: "numeric",
+        })}
+      </h2>
+      <div className={styles.navigationButtons}>
+        <button onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() - 7)))}>
+          <img src="/back.png" alt="Previous Week" />
+        </button>
+        <button onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() + 7)))}>
+          <img src="/next.png" alt="Next Week" />
+        </button>
       </div>
+    </div>
 
       {/* Week Header (Days of the Week) */}
       <div className={styles.weekHeader}>
@@ -989,8 +993,12 @@ const renderMonthView = ({
           {currentDate.toLocaleString("default", { month: "long" })} {year}
         </h2>
         <div className={styles.navigationButtons}>
-          <button onClick={goToPreviousMonth}>Previous Month</button>
-          <button onClick={goToNextMonth}>Next Month</button>
+          <button onClick={goToPreviousMonth}>
+            <img src="/back.png" alt="Previous Month" />
+          </button>
+          <button onClick={goToNextMonth}>
+            <img src="/next.png" alt="Next Month" />
+          </button>
         </div>
       </div>
 
@@ -1104,8 +1112,12 @@ const renderYearView = ({
       <div className={styles.yearViewHeader}>
         <h2>{year}</h2>
         <div className={styles.navigationButtons}>
-          <button onClick={goToPreviousYear}>Previous Year</button>
-          <button onClick={goToNextYear}>Next Year</button>
+          <button onClick={goToPreviousYear}>
+            <img src="/back.png" alt="Previous Year" />
+          </button>
+          <button onClick={goToNextYear}>
+            <img src="/next.png" alt="Next Year" />
+          </button>
         </div>
       </div>
 
