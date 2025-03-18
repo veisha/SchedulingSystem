@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import styles from "./SharedSchedules.module.css";
+import styles from "./SharedSchedules.module.css"; // 📝 Ensure the filename matches your CSS file!
 
 // Define the type for a schedule
 interface Schedule {
@@ -60,30 +60,48 @@ export default function SharedSchedulesPage() {
   }, [id]);
 
   if (loading) {
-    return <div>Loading shared schedules...</div>;
+    return (
+      <div className={styles.loadingContainer}>
+        <div className={styles.spinner}></div>
+        <p>Loading shared schedules...</p>
+      </div>
+    );
   }
 
   if (error) {
-    return <div>Error: {error}</div>;
+    return (
+      <div className={styles.container}>
+        <h1 className={styles.headingPrimary}>Shared Schedules</h1>
+        <div className={styles.error}>Error: {error}</div>
+      </div>
+    );
   }
 
   return (
     <div className={styles.container}>
-      <h1>Shared Schedules</h1>
-      <p>These schedules were shared with you.</p>
+      <h1 className={styles.headingPrimary}>Shared Schedules</h1>
+      <p className={styles.paragraph}>These schedules were shared with you.</p>
 
       {schedules.length === 0 ? (
-        <p className={styles.noSchedules}>No shared schedules found.</p>
+        <p className={styles.paragraph}>No shared schedules found.</p>
       ) : (
         <ul className={styles.scheduleList}>
           {schedules.map((schedule) => (
             <li key={schedule.id} className={styles.scheduleItem}>
-              <h2>{schedule.title}</h2>
-              <p>{schedule.description}</p>
-              <p>Start: {new Date(schedule.startDateTime).toLocaleString()}</p>
-              <p>End: {new Date(schedule.endDateTime).toLocaleString()}</p>
-              <p>All Day: {schedule.isAllDay ? "Yes" : "No"}</p>
-              <p>Repeat: {schedule.repeat}</p>
+              <h2 className={styles.headingSecondary}>{schedule.title}</h2>
+              <p className={styles.paragraph}>{schedule.description}</p>
+              <p className={styles.paragraph}>
+                <strong>Start:</strong> {new Date(schedule.startDateTime).toLocaleString()}
+              </p>
+              <p className={styles.paragraph}>
+                <strong>End:</strong> {new Date(schedule.endDateTime).toLocaleString()}
+              </p>
+              <p className={styles.paragraph}>
+                <strong>All Day:</strong> {schedule.isAllDay ? "Yes" : "No"}
+              </p>
+              <p className={styles.paragraph}>
+                <strong>Repeat:</strong> {schedule.repeat}
+              </p>
             </li>
           ))}
         </ul>

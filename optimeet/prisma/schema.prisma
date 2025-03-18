@@ -25,7 +25,6 @@ model User {
   schedules             Schedule[]
   sentAppointmentRequests     AppointmentRequest[] @relation("SentRequests")
   receivedAppointmentRequests AppointmentRequest[] @relation("ReceivedRequests")
-  sharedSchedules       SharedSchedule[] // Add this line to connect User to SharedSchedule
 
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
