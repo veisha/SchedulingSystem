@@ -110,14 +110,19 @@
         flex-grow: 1;
       }
       
+    /* =======================
+      Sidebar Navigation
+      ======================= */
       .sidebarNavList {
         list-style: none;
         padding: 0;
         margin: 0;
+        width: 100%; /* Ensure the list takes up the full width */
       }
       
       .sidebarNavItem {
         margin-bottom: 10px;
+        width: 100%; /* Ensure each item takes up the full width */
       }
       
       .sidebarNavLink {
@@ -128,6 +133,9 @@
         padding: 8px 12px;
         border-radius: 4px;
         transition: background-color 0.2s ease;
+        width: 100%; /* Ensure the link takes up the full width */
+        box-sizing: border-box; /* Include padding in the width calculation */
+        text-align: start;
       }
       
       .sidebarNavLink:hover {

@@ -6,7 +6,6 @@ import { supabase } from "@/lib/supabase";
 import { User } from "@supabase/supabase-js";
 import Calendar from "@/components/calendar";
 import MySchedules from "@/components/mySchedules";
-import AddSchedule from "@/components/addSchedule";
 import Invitations from "@/components/invitations";
 import Settings from "@/components/settings";
 import styles from "./Dashboard.module.css";
@@ -16,10 +15,10 @@ export default function Dashboard() {
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [currentContent, setCurrentContent] = useState<
-    "calendar" | "mySchedules" | "addSchedule" | "invitations" | "settings"
+    "calendar" | "mySchedules" | "invitations" | "settings" | "profile"
   >("calendar");
   const [currentDateTime, setCurrentDateTime] = useState<Date>(new Date());
-  const [calendarView, setCalendarView] = useState<"day" | "week" | "month" | "year">("day"); // Lift the view state
+  const [calendarView, setCalendarView] = useState<"day" | "week" | "month" | "year">("day");
 
   const sidebarRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
@@ -153,6 +152,17 @@ export default function Dashboard() {
           {/* Navigation Section */}
           <nav className={styles.sidebarNavContainer}>
             <ul className={styles.sidebarNavList}>
+              {/* Profile Button */}
+              <li className={styles.sidebarNavItem}>
+                <button
+                  onClick={() => setCurrentContent("profile")}
+                  className={styles.sidebarNavLink}
+                >
+                  Profile
+                </button>
+              </li>
+
+              {/* Dashboard Button */}
               <li className={styles.sidebarNavItem}>
                 <button
                   onClick={() => setCurrentContent("calendar")}
@@ -162,24 +172,17 @@ export default function Dashboard() {
                 </button>
               </li>
 
+              {/* My Schedules Button */}
               <li className={styles.sidebarNavItem}>
                 <button
                   onClick={() => setCurrentContent("mySchedules")}
                   className={styles.sidebarNavLink}
                 >
-                  My Schedule
+                  My Schedules
                 </button>
               </li>
 
-              <li className={styles.sidebarNavItem}>
-                <button
-                  onClick={() => setCurrentContent("addSchedule")}
-                  className={styles.sidebarNavLink}
-                >
-                  Add Schedule
-                </button>
-              </li>
-
+              {/* Invitations Button */}
               <li className={styles.sidebarNavItem}>
                 <button
                   onClick={() => setCurrentContent("invitations")}
@@ -189,6 +192,7 @@ export default function Dashboard() {
                 </button>
               </li>
 
+              {/* Settings Button */}
               <li className={styles.sidebarNavItem}>
                 <button
                   onClick={() => setCurrentContent("settings")}
@@ -222,8 +226,8 @@ export default function Dashboard() {
           />
         )}
         {currentContent === "mySchedules" && <MySchedules />}
-        {currentContent === "addSchedule" && <AddSchedule />}
         {currentContent === "invitations" && <Invitations />}
+        {currentContent === "profile" && <div>Profile Content</div>}
         {currentContent === "settings" && <Settings />}
       </div>
     </div>
