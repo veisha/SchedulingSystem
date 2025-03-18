@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import styles from "./mySchedules.module.css";
 import { supabase } from '@/lib/supabase'; // Adjust the import path to your Supabase client
+import { v4 as uuidv4 } from 'uuid'; // For generating unique IDs
 
 // Define the type for a schedule
 interface Schedule {
@@ -17,6 +18,7 @@ export default function MySchedules() {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [shareableLink, setShareableLink] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchSchedules = async () => {
@@ -46,6 +48,42 @@ export default function MySchedules() {
     fetchSchedules();
   }, []);
 
+  // Function to generate a shareable link
+  const generateShareableLink = async () => {
+    try {
+      // Get the authenticated user
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+      if (authError || !user) {
+        throw new Error('User not authenticated');
+      }
+
+      // Generate a unique ID for the shared schedules
+      const shareId = uuidv4();
+
+      // Save the schedules to the "shared_schedules" table in Supabase
+      const { error: insertError } = await supabase
+        .from('shared_schedules')
+        .insert([
+          {
+            id: shareId,
+            user_id: user.id,
+            schedules: schedules, // Store the schedules as JSON
+          },
+        ]);
+
+      if (insertError) {
+        throw new Error('Failed to save shared schedules');
+      }
+
+      // Construct the shareable link
+      const link = `${window.location.origin}/shared/${shareId}`;
+      setShareableLink(link);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'An unknown error occurred');
+    }
+  };
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -58,6 +96,21 @@ export default function MySchedules() {
     <div className={styles.container}>
       <h1>My Schedules</h1>
       <p>This is where your schedules will be displayed.</p>
+
+      {/* Button to generate a shareable link */}
+      <button onClick={generateShareableLink} className={styles.shareButton}>
+        Generate Shareable Link
+      </button>
+
+      {/* Display the shareable link */}
+      {shareableLink && (
+        <div className={styles.shareableLink}>
+          <p>Share this link:</p>
+          <a href={shareableLink} target="_blank" rel="noopener noreferrer">
+            {shareableLink}
+          </a>
+        </div>
+      )}
 
       {/* Display the list of schedules or a "No schedules" message */}
       {schedules.length === 0 ? (
