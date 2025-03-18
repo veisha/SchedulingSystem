@@ -180,13 +180,7 @@ const Calendar: React.FC<CalendarProps> = ({ updateDateTime, view, setView }) =>
       alert("An error occurred while adding the schedule.");
     }
   };
-
-  // Update view state when the dropdown selection changes
-  const handleViewChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newView = e.target.value as CalendarView;
-    setView(newView); // Update the view in the parent component
-  };
-
+  
   // For Month view: Generate all the days of the current month.
   useEffect(() => {
     if (view === "month") {
@@ -586,7 +580,6 @@ const renderDayView = ({
     </div>
   );
 };
-
 
 const renderWeekView = ({
   currentDate,
