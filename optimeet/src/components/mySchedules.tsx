@@ -48,41 +48,50 @@ export default function MySchedules() {
     fetchSchedules();
   }, []);
 
-  // Function to generate a shareable link
   const generateShareableLink = async () => {
     try {
-      // Get the authenticated user
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-      if (authError || !user) {
+      // Get the authenticated user session to grab the access token
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  
+      if (sessionError || !sessionData.session) {
         throw new Error('User not authenticated');
       }
-
+  
+      const accessToken = sessionData.session.access_token;
+  
       // Generate a unique ID for the shared schedules
       const shareId = uuidv4();
-
-      // Save the schedules to the "shared_schedules" table in Supabase
-      const { error: insertError } = await supabase
-        .from('shared_schedules')
-        .insert([
-          {
-            id: shareId,
-            user_id: user.id,
-            schedules: schedules, // Store the schedules as JSON
-          },
-        ]);
-
-      if (insertError) {
-        throw new Error('Failed to save shared schedules');
+  
+      // Extract schedule IDs
+      const scheduleIds = schedules.map(schedule => schedule.id);
+  
+      // Save the schedule IDs to the "SharedSchedule" table via the API
+      const response = await fetch('/api/shared-schedules', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`, // Pass the token here 👈
+        },
+        body: JSON.stringify({
+          id: shareId,
+          scheduleIds: scheduleIds, // You no longer need to pass userId
+        }),
+      });
+  
+      if (!response.ok) {
+        const errorMessage = await response.json();
+        throw new Error(errorMessage.error || 'Failed to save shared schedules');
       }
-
+  
       // Construct the shareable link
       const link = `${window.location.origin}/shared/${shareId}`;
       setShareableLink(link);
     } catch (error) {
+      console.error(error);
       setError(error instanceof Error ? error.message : 'An unknown error occurred');
     }
   };
+  
 
   if (loading) {
     return <div>Loading...</div>;
