@@ -25,6 +25,7 @@ model User {
   schedules             Schedule[]
   sentAppointmentRequests     AppointmentRequest[] @relation("SentRequests")
   receivedAppointmentRequests AppointmentRequest[] @relation("ReceivedRequests")
+  sharedSchedules       SharedSchedule[] // Add this line to connect User to SharedSchedule
 
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
@@ -64,6 +65,16 @@ model AppointmentRequest {
 
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
+}
+
+model SharedSchedule {
+  id            String      @id @default(uuid()) // Changed to String UUID
+  user          User        @relation(fields: [userId], references: [id])
+  userId        String      // Changed to String to match User.id
+
+  schedules     Json        // Store the schedules as JSON
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 }
 
 enum ScheduleType {
