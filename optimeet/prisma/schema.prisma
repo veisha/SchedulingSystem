@@ -67,16 +67,6 @@ model AppointmentRequest {
   updatedAt     DateTime   @updatedAt
 }
 
-model SharedSchedule {
-  id            String      @id @default(uuid()) // Changed to String UUID
-  user          User        @relation(fields: [userId], references: [id])
-  userId        String      // Changed to String to match User.id
-
-  scheduleIds   String[]    // Array of schedule IDs (references Schedule.id)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-}
-
 enum ScheduleType {
   TASK
   APPOINTMENT

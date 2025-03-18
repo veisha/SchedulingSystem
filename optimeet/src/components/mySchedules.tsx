@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+"use client";
+
+import { useEffect, useState } from "react";
 import styles from "./mySchedules.module.css";
-import { supabase } from '@/lib/supabase'; // Adjust the import path to your Supabase client
-import { v4 as uuidv4 } from 'uuid'; // For generating unique IDs
+import { supabase } from "@/lib/supabase"; // Adjust the path if needed
 
 // Define the type for a schedule
 interface Schedule {
@@ -27,19 +28,21 @@ export default function MySchedules() {
         const { data: { user }, error: authError } = await supabase.auth.getUser();
 
         if (authError || !user) {
-          throw new Error('User not authenticated');
+          throw new Error("User not authenticated");
         }
 
         // Fetch schedules for the authenticated user
         const response = await fetch(`/api/schedule?userId=${user.id}`);
+
         if (!response.ok) {
-          throw new Error('Failed to fetch schedules');
+          throw new Error("Failed to fetch schedules");
         }
 
         const data: Schedule[] = await response.json();
         setSchedules(data);
       } catch (error) {
-        setError(error instanceof Error ? error.message : 'An unknown error occurred');
+        console.error("❗ Fetch error:", error);
+        setError(error instanceof Error ? error.message : "An unknown error occurred");
       } finally {
         setLoading(false);
       }
@@ -50,51 +53,25 @@ export default function MySchedules() {
 
   const generateShareableLink = async () => {
     try {
-      // Get the authenticated user session to grab the access token
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-  
-      if (sessionError || !sessionData.session) {
-        throw new Error('User not authenticated');
+      // Get the authenticated user
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+      if (authError || !user) {
+        throw new Error("User not authenticated");
       }
-  
-      const accessToken = sessionData.session.access_token;
-  
-      // Generate a unique ID for the shared schedules
-      const shareId = uuidv4();
-  
-      // Extract schedule IDs
-      const scheduleIds = schedules.map(schedule => schedule.id);
-  
-      // Save the schedule IDs to the "SharedSchedule" table via the API
-      const response = await fetch('/api/shared-schedules', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`, // Pass the token here 👈
-        },
-        body: JSON.stringify({
-          id: shareId,
-          scheduleIds: scheduleIds, // You no longer need to pass userId
-        }),
-      });
-  
-      if (!response.ok) {
-        const errorMessage = await response.json();
-        throw new Error(errorMessage.error || 'Failed to save shared schedules');
-      }
-  
-      // Construct the shareable link
-      const link = `${window.location.origin}/shared/${shareId}`;
+
+      // Directly create the link using the user ID
+      const link = `${window.location.origin}/shared/${user.id}`;
+
       setShareableLink(link);
     } catch (error) {
-      console.error(error);
-      setError(error instanceof Error ? error.message : 'An unknown error occurred');
+      console.error("❗ Link generation error:", error);
+      setError(error instanceof Error ? error.message : "An unknown error occurred");
     }
   };
-  
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <div>Loading your schedules...</div>;
   }
 
   if (error) {
@@ -126,13 +103,13 @@ export default function MySchedules() {
         <p className={styles.noSchedules}>No schedules found. Create your first schedule!</p>
       ) : (
         <ul className={styles.scheduleList}>
-          {schedules.map(schedule => (
+          {schedules.map((schedule) => (
             <li key={schedule.id} className={styles.scheduleItem}>
               <h2>{schedule.title}</h2>
               <p>{schedule.description}</p>
               <p>Start: {new Date(schedule.startDateTime).toLocaleString()}</p>
               <p>End: {new Date(schedule.endDateTime).toLocaleString()}</p>
-              <p>All Day: {schedule.isAllDay ? 'Yes' : 'No'}</p>
+              <p>All Day: {schedule.isAllDay ? "Yes" : "No"}</p>
               <p>Repeat: {schedule.repeat}</p>
             </li>
           ))}

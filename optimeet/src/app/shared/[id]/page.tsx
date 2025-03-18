@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import Head from 'next/head';
-import styles from './SharedSchedules.module.css';
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import styles from "./SharedSchedules.module.css";
 
+// Define the type for a schedule
 interface Schedule {
   id: string;
   title: string;
@@ -15,7 +15,7 @@ interface Schedule {
   repeat: string;
 }
 
-export default function SharedSchedules() {
+export default function SharedSchedulesPage() {
   const params = useParams();
   const id = params?.id as string;
 
@@ -26,59 +26,31 @@ export default function SharedSchedules() {
   useEffect(() => {
     const fetchSharedSchedules = async () => {
       try {
-        console.log('🔎 Fetching shared schedule from API...');
-        console.log('➡️ Shared Schedule ID:', id);
+        console.log("🔎 Fetching schedules by userId...");
+        console.log("➡️ userId from URL:", id);
 
         if (!id) {
-          console.warn('⚠️ No ID provided in URL params.');
+          console.warn("⚠️ No ID provided in URL params.");
+          setError("Invalid user ID.");
           return;
         }
 
-        // Call your Next.js API route (not Supabase directly)
-        const response = await fetch(`/api/shared-schedules?id=${id}`);
+        // ✅ Call the updated API route
+        const response = await fetch(`/api/schedules-by-user-id?userId=${id}`);
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to fetch shared schedule');
+          throw new Error(errorData.error || "Failed to fetch schedules");
         }
 
-        const { sharedSchedule } = await response.json();
+        const { schedules }: { schedules: Schedule[] } = await response.json();
 
-        console.log('✅ API response sharedSchedule:', sharedSchedule);
+        console.log("✅ Schedules fetched:", schedules);
 
-        const scheduleIds = sharedSchedule.scheduleIds || [];
-
-        if (!scheduleIds.length) {
-          console.info('ℹ️ No schedule IDs found in shared schedule.');
-          setSchedules([]);
-          setLoading(false);
-          return;
-        }
-
-        // Now fetch the actual schedules by IDs from another API route (optional)
-        console.log('🔎 Fetching schedules from API by IDs...');
-
-        const schedulesResponse = await fetch(`/api/schedules-by-ids`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ scheduleIds }),
-        });
-
-        if (!schedulesResponse.ok) {
-          const errorData = await schedulesResponse.json();
-          throw new Error(errorData.error || 'Failed to fetch schedules');
-        }
-
-        const { schedules: latestSchedules } = await schedulesResponse.json();
-
-        console.log('✅ Final fetched schedules:', latestSchedules);
-
-        setSchedules(latestSchedules || []);
+        setSchedules(schedules);
       } catch (error) {
-        console.error('❗Fetch error:', error);
-        setError(error instanceof Error ? error.message : 'An unknown error occurred');
+        console.error("❗Fetch error:", error);
+        setError(error instanceof Error ? error.message : "An unknown error occurred");
       } finally {
         setLoading(false);
       }
@@ -88,12 +60,7 @@ export default function SharedSchedules() {
   }, [id]);
 
   if (loading) {
-    return (
-      <div className={styles.loadingContainer}>
-        <div className={styles.spinner}></div>
-        <p>Loading shared schedules...</p>
-      </div>
-    );
+    return <div>Loading shared schedules...</div>;
   }
 
   if (error) {
@@ -102,33 +69,21 @@ export default function SharedSchedules() {
 
   return (
     <div className={styles.container}>
-      <Head>
-        <title>Shared Schedules</title>
-        <meta name="description" content="View shared schedules created by users." />
-      </Head>
-
-      <h1 className={styles.headingPrimary}>Shared Schedules</h1>
+      <h1>Shared Schedules</h1>
+      <p>These schedules were shared with you.</p>
 
       {schedules.length === 0 ? (
-        <p className={styles.paragraph}>No schedules found for this shared link.</p>
+        <p className={styles.noSchedules}>No shared schedules found.</p>
       ) : (
         <ul className={styles.scheduleList}>
-          {schedules.map(schedule => (
+          {schedules.map((schedule) => (
             <li key={schedule.id} className={styles.scheduleItem}>
-              <h2 className={styles.headingSecondary}>{schedule.title}</h2>
-              <p className={styles.paragraph}>{schedule.description}</p>
-              <p className={styles.paragraph}>
-                <strong>Start:</strong> {new Date(schedule.startDateTime).toLocaleString()}
-              </p>
-              <p className={styles.paragraph}>
-                <strong>End:</strong> {new Date(schedule.endDateTime).toLocaleString()}
-              </p>
-              <p className={styles.paragraph}>
-                <strong>All Day:</strong> {schedule.isAllDay ? 'Yes' : 'No'}
-              </p>
-              <p className={styles.paragraph}>
-                <strong>Repeat:</strong> {schedule.repeat}
-              </p>
+              <h2>{schedule.title}</h2>
+              <p>{schedule.description}</p>
+              <p>Start: {new Date(schedule.startDateTime).toLocaleString()}</p>
+              <p>End: {new Date(schedule.endDateTime).toLocaleString()}</p>
+              <p>All Day: {schedule.isAllDay ? "Yes" : "No"}</p>
+              <p>Repeat: {schedule.repeat}</p>
             </li>
           ))}
         </ul>
