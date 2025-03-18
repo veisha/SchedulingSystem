@@ -246,6 +246,7 @@ const Calendar: React.FC<CalendarProps> = ({ updateDateTime, view, setView }) =>
           goToNextDay,
           getCurrentHour,
           schedules,
+          setView,
         });
       case "week":
         return renderWeekView({
@@ -256,6 +257,7 @@ const Calendar: React.FC<CalendarProps> = ({ updateDateTime, view, setView }) =>
           formData,
           setFormData,
           schedules,
+          setView,
         });
       case "month":
         return renderMonthView({
@@ -276,20 +278,6 @@ const Calendar: React.FC<CalendarProps> = ({ updateDateTime, view, setView }) =>
 
   return (
     <div className={styles.calendarContainer}>
-      {/* Custom Dropdown for View Selection, placed on the far right */}
-      <div className={styles.viewSelector}>
-        <select
-          className={styles.viewDropdown}
-          value={view}
-          onChange={handleViewChange}
-        >
-          <option value="day">Day</option>
-          <option value="week">Week</option>
-          <option value="month">Month</option>
-          <option value="year">Year</option>
-        </select>
-      </div>
-
       {/* Calendar View */}
       <div className={styles.viewContent}>
         {renderView()}
@@ -309,6 +297,7 @@ const renderDayView = ({
   goToNextDay,
   getCurrentHour,
   schedules,
+  setView,
 }: {
   handleAddSchedule: ({
     formData,
@@ -328,6 +317,7 @@ const renderDayView = ({
   goToNextDay: () => void;
   getCurrentHour: () => number;
   schedules: Schedule[];
+  setView: (view: CalendarView) => void;
 }) => {
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const currentHour = getCurrentHour();
@@ -406,20 +396,39 @@ const renderDayView = ({
   };
 
   return (
-    <div className={styles.dayView}>
-      {/* Header */}
-      <div className={styles.dayViewHeader}>
-        <h2>{currentDay}</h2>
-        <p>{currentDateFormatted}</p>
-        <div className={styles.navigationButtons}>
-          <button onClick={goToPreviousDay}>
-            <img src="/back.png" alt="Previous Day" />
-          </button>
-          <button onClick={goToNextDay}>
-            <img src="/next.png" alt="Next Day" />
-          </button>
-        </div>
-      </div>
+<div className={styles.dayView}>
+  {/* Header for Day View */}
+  <div className={styles.dayViewHeader}>
+    {/* Navigation Buttons (Left Side) */}
+    <div className={styles.navigationButtons}>
+      <button onClick={goToPreviousDay}>
+        <img src="/back.png" alt="Previous Day" />
+      </button>
+      <button onClick={goToNextDay}>
+        <img src="/next.png" alt="Next Day" />
+      </button>
+    </div>
+
+    {/* Day and Date (Centered) */}
+    <div>
+      <h2>{currentDay}</h2>
+      <p>{currentDateFormatted}</p>
+    </div>
+
+    {/* Dropdown for View Selection (Right Side) */}
+    <div className={styles.viewSelector}>
+      <select
+        className={styles.viewDropdown}
+        value="day" // Set the value to "day" since this is the day view
+        onChange={(e) => setView(e.target.value as CalendarView)}
+      >
+        <option value="day">Day</option>
+        <option value="week">Week</option>
+        <option value="month">Month</option>
+        <option value="year">Year</option>
+      </select>
+    </div>
+  </div>
 
       {/* Main view */}
       <div className={styles.dayViewColumns}>
@@ -587,6 +596,7 @@ const renderWeekView = ({
   formData,
   setFormData,
   schedules,
+  setView,
 }: {
   currentDate: Date;
   setCurrentDate: (date: Date) => void;
@@ -595,6 +605,7 @@ const renderWeekView = ({
   formData: FormData;
   setFormData: (data: FormData) => void;
   schedules: Schedule[];
+  setView: (view: CalendarView) => void;
 }) => {
   const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const hours = Array.from({ length: 24 }, (_, i) => i);
@@ -727,24 +738,41 @@ const renderWeekView = ({
 
   return (
     <div className={styles.weekView}>
-      {/* Header for Week View */}
-      <div className={styles.weekViewHeader}>
-      <h2>
-        {startOfWeek.toLocaleString("default", { month: "short", day: "numeric" })} -{" "}
-        {new Date(startOfWeek.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleString("default", {
-          month: "short",
-          day: "numeric",
-        })}
-      </h2>
-      <div className={styles.navigationButtons}>
-        <button onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() - 7)))}>
-          <img src="/back.png" alt="Previous Week" />
-        </button>
-        <button onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() + 7)))}>
-          <img src="/next.png" alt="Next Week" />
-        </button>
-      </div>
-    </div>
+        {/* Header for Week View */}
+        <div className={styles.weekViewHeader}>
+          {/* Navigation Buttons (Left Side) */}
+          <div className={styles.navigationButtons}>
+            <button onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() - 7)))}>
+              <img src="/back.png" alt="Previous Week" />
+            </button>
+            <button onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() + 7)))}>
+              <img src="/next.png" alt="Next Week" />
+            </button>
+          </div>
+
+          {/* Week Range (Centered) */}
+          <h2>
+            {startOfWeek.toLocaleString("default", { month: "short", day: "numeric" })} -{" "}
+            {new Date(startOfWeek.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleString("default", {
+              month: "short",
+              day: "numeric",
+            })}
+          </h2>
+
+          {/* Dropdown for View Selection (Right Side) */}
+          <div className={styles.viewSelector}>
+            <select
+              className={styles.viewDropdown}
+              value="week" // Set the value to "week" since this is the week view
+              onChange={(e) => setView(e.target.value as CalendarView)}
+            >
+              <option value="day">Day</option>
+              <option value="week">Week</option>
+              <option value="month">Month</option>
+              <option value="year">Year</option>
+            </select>
+          </div>
+        </div>
 
       {/* Week Header (Days of the Week) */}
       <div className={styles.weekHeader}>
@@ -987,20 +1015,37 @@ const renderMonthView = ({
 
   return (
     <div className={styles.monthView}>
-      {/* Header for Month View */}
-      <div className={styles.monthHeader}>
-        <h2>
-          {currentDate.toLocaleString("default", { month: "long" })} {year}
-        </h2>
-        <div className={styles.navigationButtons}>
-          <button onClick={goToPreviousMonth}>
-            <img src="/back.png" alt="Previous Month" />
-          </button>
-          <button onClick={goToNextMonth}>
-            <img src="/next.png" alt="Next Month" />
-          </button>
-        </div>
-      </div>
+  {/* Header for Month View */}
+  <div className={styles.monthHeader}>
+    {/* Navigation Buttons (Left Side) */}
+    <div className={styles.navigationButtons}>
+      <button onClick={goToPreviousMonth}>
+        <img src="/back.png" alt="Previous Month" />
+      </button>
+      <button onClick={goToNextMonth}>
+        <img src="/next.png" alt="Next Month" />
+      </button>
+    </div>
+
+    {/* Month and Year (Centered) */}
+    <h2>
+      {currentDate.toLocaleString("default", { month: "long" })} {currentDate.getFullYear()}
+    </h2>
+
+    {/* Dropdown for View Selection (Right Side) */}
+    <div className={styles.viewSelector}>
+      <select
+        className={styles.viewDropdown}
+        value="month" // Set the value to "month" since this is the month view
+        onChange={(e) => setView(e.target.value as CalendarView)}
+      >
+        <option value="day">Day</option>
+        <option value="week">Week</option>
+        <option value="month">Month</option>
+        <option value="year">Year</option>
+      </select>
+    </div>
+  </div>
 
       {/* Month Grid */}
       <div className={styles.monthGrid}>
@@ -1108,18 +1153,35 @@ const renderYearView = ({
 
   return (
     <div className={styles.yearView}>
-      {/* Header for Year View */}
-      <div className={styles.yearViewHeader}>
-        <h2>{year}</h2>
-        <div className={styles.navigationButtons}>
-          <button onClick={goToPreviousYear}>
-            <img src="/back.png" alt="Previous Year" />
-          </button>
-          <button onClick={goToNextYear}>
-            <img src="/next.png" alt="Next Year" />
-          </button>
+        {/* Header for Year View */}
+        <div className={styles.yearViewHeader}>
+          {/* Navigation Buttons (Left Side) */}
+          <div className={styles.navigationButtons}>
+            <button onClick={goToPreviousYear}>
+              <img src="/back.png" alt="Previous Year" />
+            </button>
+            <button onClick={goToNextYear}>
+              <img src="/next.png" alt="Next Year" />
+            </button>
+          </div>
+
+          {/* Year (Centered) */}
+          <h2>{year}</h2>
+
+          {/* Dropdown for View Selection (Right Side) */}
+          <div className={styles.viewSelector}>
+            <select
+              className={styles.viewDropdown}
+              value="year" // Set the value to "year" since this is the year view
+              onChange={(e) => setView(e.target.value as CalendarView)}
+            >
+              <option value="day">Day</option>
+              <option value="week">Week</option>
+              <option value="month">Month</option>
+              <option value="year">Year</option>
+            </select>
+          </div>
         </div>
-      </div>
 
       {/* Year Grid */}
       <div className={styles.yearGrid}>
@@ -1138,7 +1200,7 @@ const renderYearView = ({
             <div
               key={monthIndex}
               className={`${styles.yearMonth} ${
-                isPastMonth(monthIndex) ? styles.pastMonth  : ""
+                isPastMonth(monthIndex) ? styles.pastMonth : ""
               }`}
               onClick={!isPastMonth(monthIndex) ? () => handleMonthClick(monthIndex) : undefined} // Disable click for past months
               style={{ cursor: isPastMonth(monthIndex) ? "not-allowed" : "pointer" }} // Change cursor for past months
@@ -1149,7 +1211,7 @@ const renderYearView = ({
                 })}
               </h3>
               <div className={styles.yearMonthGrid}>
-              {cells.map((cell, idx) => (
+                {cells.map((cell, idx) => (
                   <div
                     key={idx}
                     className={`${styles.yearMonthCell} ${
@@ -1172,7 +1234,7 @@ const renderYearView = ({
                   >
                     {cell}
                   </div>
-                ))}   
+                ))}
               </div>
             </div>
           );
