@@ -40,19 +40,35 @@ interface FormData {
   repeat: RepeatType | null;
 }
 
-interface CalendarProps {
-  updateDateTime: (dateTime: Date) => void;
-  view: CalendarView;
-  setView: (view: CalendarView) => void;
+interface BaseCalendarProps {
   schedules: Schedule[];
-  isReadOnly?: boolean;
+  updateDateTime: (dateTime: Date) => void;
+  view: "day" | "week" | "month" | "year";
+  setView: React.Dispatch<React.SetStateAction<"day" | "week" | "month" | "year">>;
 }
 
+interface ReadOnlyCalendarProps extends BaseCalendarProps {
+  isReadOnly: true;
+  setSchedules?: never;
+  fetchSchedules?: never;
+}
+
+interface EditableCalendarProps extends BaseCalendarProps {
+  isReadOnly?: false; // optional, defaults to false
+  setSchedules: React.Dispatch<React.SetStateAction<Schedule[]>>;
+  fetchSchedules: () => Promise<void>;
+}
+
+type CalendarProps = ReadOnlyCalendarProps | EditableCalendarProps;
+
+
 const Calendar: React.FC<CalendarProps> = ({
+  schedules,
+  setSchedules,
+  fetchSchedules,
   updateDateTime,
   view,
   setView,
-  schedules,
   isReadOnly = false,
 }) => {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
@@ -156,21 +172,23 @@ const Calendar: React.FC<CalendarProps> = ({
       return;
     }
   
-    // Use local time directly if you don't want UTC conversion
     const startDateTime = selectedSlot.date.toISOString();
     const endDateTime = selectedSlot.endDate.toISOString();
   
-    // ✅ Conflict checker:
     const hasConflict = schedules.some((existing) => {
       const existingStart = new Date(existing.startDateTime).getTime();
       const existingEnd = new Date(existing.endDateTime).getTime();
   
-      return new Date(startDateTime).getTime() < existingEnd &&
-             new Date(endDateTime).getTime() > existingStart;
+      return (
+        new Date(startDateTime).getTime() < existingEnd &&
+        new Date(endDateTime).getTime() > existingStart
+      );
     });
   
     if (hasConflict) {
-      alert("There's a conflict with another schedule! Please select a different time.");
+      alert(
+        "There's a conflict with another schedule! Please select a different time."
+      );
       return;
     }
   
@@ -182,16 +200,20 @@ const Calendar: React.FC<CalendarProps> = ({
           type: formData.type,
           title: formData.title,
           description: formData.description,
-          startDateTime: startDateTime, // already an ISO string
-          endDateTime: endDateTime,     // already an ISO string
+          startDateTime,
+          endDateTime,
           isAllDay: formData.isAllDay || false,
-          repeat: formData.repeat || 'None',
+          repeat: formData.repeat || "None",
           userId,
         }),
       });
   
       if (response.ok) {
+        const newSchedule = await response.json(); // get the new schedule data from the API
         alert("Schedule added successfully!");
+  
+        await fetchSchedules?.();
+
         closePopover();
       } else {
         const errorData = await response.json();
@@ -202,6 +224,7 @@ const Calendar: React.FC<CalendarProps> = ({
       alert("An error occurred while adding the schedule.");
     }
   };
+  
   
   
 
@@ -322,13 +345,24 @@ const renderDayView = ({
 
   // Filter schedules for the current day
   const schedulesForTheDay = schedules.filter((schedule) => {
-    const scheduleDate = new Date(schedule.startDateTime);
-    return (
-      scheduleDate.getDate() === currentDate.getDate() &&
-      scheduleDate.getMonth() === currentDate.getMonth() &&
-      scheduleDate.getFullYear() === currentDate.getFullYear()
-    );
+    const start = new Date(schedule.startDateTime);
+    const end = new Date(schedule.endDateTime);
+  
+    // If end is before start, it spans midnight, so we add a day
+    if (end <= start) {
+      end.setDate(end.getDate() + 1);
+    }
+  
+    const dayStart = new Date(currentDate);
+    dayStart.setHours(0, 0, 0, 0);
+  
+    const dayEnd = new Date(dayStart);
+    dayEnd.setHours(24, 0, 0, 0); // end of day
+  
+    // Check if the schedule overlaps with the current day
+    return start < dayEnd && end > dayStart;
   });
+  
 
   const handleEventSlotClick = (hour: number) => {
     const selectedDate = new Date(currentDate);
@@ -387,14 +421,24 @@ const renderDayView = ({
     return slotTime < now;
   };
 
-  const isOccupiedTimeSlot = (hour: number) => {
+  const isOccupiedTimeSlot = (hour: number, date: Date) => {
     return schedulesForTheDay.some((schedule) => {
-      const startHour = new Date(schedule.startDateTime).getHours();
-      const endHour = new Date(schedule.endDateTime).getHours();
-
-      return hour >= startHour && hour < endHour;
+      const startDate = new Date(schedule.startDateTime);
+      const endDate = new Date(schedule.endDateTime);
+  
+      if (endDate <= startDate) {
+        endDate.setDate(endDate.getDate() + 1);
+      }
+  
+      const slotDateTime = new Date(date);
+      slotDateTime.setHours(hour, 0, 0, 0);
+  
+      return slotDateTime >= startDate && slotDateTime < endDate;
     });
   };
+  
+  
+  
 
   return (
     <div className={styles.dayView}>
@@ -446,7 +490,7 @@ const renderDayView = ({
 
         <div className={styles.eventsColumn}>
           {hours.map((hour) => {
-            const isOccupied = isOccupiedTimeSlot(hour);
+            const isOccupied = isOccupiedTimeSlot(hour, currentDate);
             const isSelected = selectedSlot && selectedSlot.hour === hour;
             const isPast = isPastTimeSlot(hour);
 

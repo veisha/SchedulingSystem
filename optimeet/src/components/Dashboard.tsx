@@ -57,41 +57,44 @@ export default function Dashboard() {
   }, [router]);
 
   // ✅ Fetch schedules after user is authenticated
-  useEffect(() => {
-    const fetchSchedules = async () => {
-      if (!user) return;
-  
-      try {
-        const response = await fetch(`/api/schedules-by-user-id?userId=${user.id}`);
-        if (!response.ok) {
-          console.error("Failed to fetch schedules");
-          return;
-        }
-  
-        const { schedules: fetchedSchedules } = await response.json();
-  
-        // ✅ Convert date strings to Date objects and adjust for local timezone
-        const convertedSchedules = fetchedSchedules.map((schedule: Schedule) => {
-          // Parse the UTC date strings and convert them to local timezone
-          const startDateTime = new Date(schedule.startDateTime + "Z"); // Add "Z" to indicate UTC
-          const endDateTime = new Date(schedule.endDateTime + "Z"); // Add "Z" to indicate UTC
-  
-          return {
-            ...schedule,
-            startDateTime, // Converted to local timezone
-            endDateTime, // Converted to local timezone
-          };
-        });
-  
-        setSchedules(convertedSchedules);
-        console.log("✅ Schedules fetched & converted:", convertedSchedules);
-      } catch (error) {
-        console.error("Error fetching schedules:", error);
+  // ✅ Fetch schedules function that can be reused
+  const fetchSchedules = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const response = await fetch(`/api/schedules-by-user-id?userId=${user.id}`);
+      if (!response.ok) {
+        console.error("Failed to fetch schedules");
+        return;
       }
-    };
-  
-    fetchSchedules();
+
+      const { schedules: fetchedSchedules } = await response.json();
+
+      // ✅ Convert date strings to Date objects and adjust for local timezone
+      const convertedSchedules = fetchedSchedules.map((schedule: Schedule) => {
+        const startDateTime = new Date(schedule.startDateTime + "Z");
+        const endDateTime = new Date(schedule.endDateTime + "Z");
+
+        return {
+          ...schedule,
+          startDateTime,
+          endDateTime,
+        };
+      });
+
+      setSchedules(convertedSchedules);
+      console.log("✅ Schedules fetched & converted:", convertedSchedules);
+    } catch (error) {
+      console.error("Error fetching schedules:", error);
+    }
   }, [user]);
+
+  // ✅ Fetch schedules after user is authenticated
+  useEffect(() => {
+    if (user) {
+      fetchSchedules();
+    }
+  }, [user, fetchSchedules]);
   
 
   // ✅ Logout handler
@@ -256,12 +259,14 @@ export default function Dashboard() {
       <div className={styles.content}>
         {currentContent === "calendar" && (
           <Calendar
-            schedules={schedules}
-            updateDateTime={updateDateTime}
-            view={calendarView}
-            setView={setCalendarView}
-            isReadOnly={false} // Allow schedule creation (default behavior)
-          />
+          schedules={schedules}
+          setSchedules={setSchedules}
+          fetchSchedules={fetchSchedules}
+          updateDateTime={updateDateTime}
+          view={calendarView}
+          setView={setCalendarView}
+          isReadOnly={false}
+        />
         )}
         {currentContent === "mySchedules" && <MySchedules />}
         {currentContent === "invitations" && <Invitations />}

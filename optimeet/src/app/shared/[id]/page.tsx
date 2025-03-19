@@ -127,8 +127,9 @@ export default function SharedSchedulesPage() {
         updateDateTime={() => {}}
         view={calendarView}
         setView={setCalendarView}
-        isReadOnly={true}
+        isReadOnly={true} // ✅ Only read-only props required
       />
+
     </div>
   );
 }
