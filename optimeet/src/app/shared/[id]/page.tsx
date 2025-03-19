@@ -43,35 +43,44 @@ export default function SharedSchedulesPage() {
       try {
         console.log("🔎 Fetching schedules and user info by userId...");
         console.log("➡️ userId from URL:", id);
-
+    
         if (!id) {
           console.warn("⚠️ No ID provided in URL params.");
           setError("Invalid user ID.");
           return;
         }
-
+    
         // 🔥 1. Fetch schedules by userId
         const response = await fetch(`/api/schedules-by-user-id?userId=${id}`);
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.error || "Failed to fetch schedules");
         }
-
-        const { schedules }: { schedules: Schedule[] } = await response.json();
-        console.log("✅ Schedules fetched:", schedules);
-
+    
+        let { schedules }: { schedules: Schedule[] } = await response.json();
+        console.log("✅ Schedules fetched (raw):", schedules);
+    
+        // ✅ Convert to local time
+        schedules = schedules.map((schedule) => ({
+          ...schedule,
+          startDateTime: new Date(schedule.startDateTime + "Z"),
+          endDateTime: new Date(schedule.endDateTime + "Z"),
+        }));
+    
+        console.log("✅ Schedules after converting to local Date objects:", schedules);
+    
         setSchedules(schedules);
-
+    
         // 🔥 2. Fetch user info by userId
         const userResponse = await fetch(`/api/user-info?userId=${id}`);
         if (!userResponse.ok) {
           const userError = await userResponse.json();
           throw new Error(userError.error || "Failed to fetch user info");
         }
-
+    
         const { user }: { user: User } = await userResponse.json();
         console.log("✅ User info fetched:", user);
-
+    
         setUser(user);
       } catch (error) {
         console.error("❗Fetch error:", error);
@@ -80,6 +89,7 @@ export default function SharedSchedulesPage() {
         setLoading(false);
       }
     };
+    
 
     fetchSharedSchedules(); // Removed the setTimeout and called directly
   }, [id]);
