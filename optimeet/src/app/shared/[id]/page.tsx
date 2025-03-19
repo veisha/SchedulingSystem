@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Calendar from "@/components/calendar";
 import styles from "./SharedSchedules.module.css";
+import EscaladeLoader from "@/components/EscaladeLoader"; // Adjust the path as needed
 
 interface Schedule {
   id: string;
@@ -80,14 +81,14 @@ export default function SharedSchedulesPage() {
       }
     };
 
-    fetchSharedSchedules();
+    fetchSharedSchedules(); // Removed the setTimeout and called directly
   }, [id]);
 
   if (loading) {
     return (
       <div className={styles.loadingContainer}>
-        <div className={styles.spinner}></div>
-        <p>Loading schedules...</p>
+        <EscaladeLoader />
+        <p className={styles.loadtext}>Loading schedules...</p>
       </div>
     );
   }
