@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import styles from "./Calendar.module.css";
 import { supabase } from '@/lib/supabase'; // Adjust the import based on your project structure
+
 
 type CalendarView = "day" | "week" | "month" | "year";
 
@@ -383,10 +385,20 @@ const renderDayView = ({
         {/* Navigation Buttons (Left Side) */}
         <div className={styles.navigationButtons}>
           <button onClick={goToPreviousDay}>
-            <img src="/back.png" alt="Previous Day" />
+          <Image
+              src="/back.png"
+              alt="Previous Day"
+              width={24} // Set the width of the image
+              height={24} // Set the height of the image
+            />
           </button>
           <button onClick={goToNextDay}>
-            <img src="/next.png" alt="Next Day" />
+          <Image
+              src="/next.png"
+              alt="Next Day"
+              width={24} // Set the width of the image
+              height={24} // Set the height of the image
+            />
           </button>
         </div>
 
@@ -723,10 +735,20 @@ const renderWeekView = ({
           {/* Navigation Buttons (Left Side) */}
           <div className={styles.navigationButtons}>
             <button onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() - 7)))}>
-              <img src="/back.png" alt="Previous Week" />
+            <Image
+              src="/back.png"
+              alt="Previous Week"
+              width={24} // Set the width of the image
+              height={24} // Set the height of the image
+            />
             </button>
             <button onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() + 7)))}>
-              <img src="/next.png" alt="Next Week" />
+            <Image
+              src="/next.png"
+              alt="Next Week"
+              width={24} // Set the width of the image
+              height={24} // Set the height of the image
+            />
             </button>
           </div>
 
@@ -1000,10 +1022,20 @@ const renderMonthView = ({
     {/* Navigation Buttons (Left Side) */}
     <div className={styles.navigationButtons}>
       <button onClick={goToPreviousMonth}>
-        <img src="/back.png" alt="Previous Month" />
+      <Image
+              src="/back.png"
+              alt="Previous Month"
+              width={24} // Set the width of the image
+              height={24} // Set the height of the image
+            />
       </button>
       <button onClick={goToNextMonth}>
-        <img src="/next.png" alt="Next Month" />
+      <Image
+              src="/next.png"
+              alt="Next Month"
+              width={24} // Set the width of the image
+              height={24} // Set the height of the image
+            />
       </button>
     </div>
 
@@ -1138,10 +1170,20 @@ const renderYearView = ({
           {/* Navigation Buttons (Left Side) */}
           <div className={styles.navigationButtons}>
             <button onClick={goToPreviousYear}>
-              <img src="/back.png" alt="Previous Year" />
+              <Image
+                src="/back.png"
+                alt="Previous Year"
+                width={24} // Set the width of the image
+                height={24} // Set the height of the image
+              />
             </button>
             <button onClick={goToNextYear}>
-              <img src="/next.png" alt="Next Year" />
+              <Image
+                src="/next.png"
+                alt="Next Year"
+                width={24} // Set the width of the image
+                height={24} // Set the height of the image
+              />
             </button>
           </div>
 

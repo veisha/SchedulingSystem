@@ -71,7 +71,7 @@ export default function Dashboard() {
         const { schedules: fetchedSchedules } = await response.json();
   
         // ✅ Convert date strings to Date objects and adjust for local timezone
-        const convertedSchedules = fetchedSchedules.map((schedule: any) => {
+        const convertedSchedules = fetchedSchedules.map((schedule: Schedule) => {
           // Parse the UTC date strings and convert them to local timezone
           const startDateTime = new Date(schedule.startDateTime + "Z"); // Add "Z" to indicate UTC
           const endDateTime = new Date(schedule.endDateTime + "Z"); // Add "Z" to indicate UTC
