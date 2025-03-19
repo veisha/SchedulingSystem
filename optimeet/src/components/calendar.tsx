@@ -142,36 +142,16 @@ const Calendar: React.FC<CalendarProps> = ({
   
     const userId = user.id;
   
-    // Convert selectedSlot.date and selectedSlot.endDate to UTC
-    const startDateTimeUTC = new Date(
-      Date.UTC(
-        selectedSlot.date.getFullYear(),
-        selectedSlot.date.getMonth(),
-        selectedSlot.date.getDate(),
-        selectedSlot.date.getHours(),
-        selectedSlot.date.getMinutes(),
-        selectedSlot.date.getSeconds()
-      )
-    );
+    // ✅ No UTC conversion, use local dates directly
+    const startDateTime = selectedSlot.date;      // Local date-time
+    const endDateTime = selectedSlot.endDate;     // Local date-time
   
-    const endDateTimeUTC = new Date(
-      Date.UTC(
-        selectedSlot.endDate.getFullYear(),
-        selectedSlot.endDate.getMonth(),
-        selectedSlot.endDate.getDate(),
-        selectedSlot.endDate.getHours(),
-        selectedSlot.endDate.getMinutes(),
-        selectedSlot.endDate.getSeconds()
-      )
-    );
-  
-    // ✅ Conflict checker:
+    // ✅ Conflict checker (still works fine with local dates)
     const hasConflict = schedules.some((existing) => {
       const existingStart = new Date(existing.startDateTime).getTime();
       const existingEnd = new Date(existing.endDateTime).getTime();
   
-      // Check overlap:
-      return startDateTimeUTC.getTime() < existingEnd && endDateTimeUTC.getTime() > existingStart;
+      return startDateTime.getTime() < existingEnd && endDateTime.getTime() > existingStart;
     });
   
     if (hasConflict) {
@@ -179,7 +159,6 @@ const Calendar: React.FC<CalendarProps> = ({
       return;
     }
   
-    // ✅ If no conflict, proceed to add the schedule:
     try {
       const response = await fetch("/api/schedule", {
         method: "POST",
@@ -188,8 +167,9 @@ const Calendar: React.FC<CalendarProps> = ({
           type: formData.type,
           title: formData.title,
           description: formData.description,
-          startDateTime: startDateTimeUTC.toISOString(), // Save in UTC
-          endDateTime: endDateTimeUTC.toISOString(), // Save in UTC
+          // ✅ No .toISOString(), send the date directly or format as needed
+          startDateTime: startDateTime.toString(),  // Or .toLocaleString() if needed
+          endDateTime: endDateTime.toString(),      // Or .toLocaleString() if needed
           isAllDay: formData.isAllDay || false,
           repeat: formData.repeat || 'None',
           userId,
@@ -207,6 +187,7 @@ const Calendar: React.FC<CalendarProps> = ({
       alert("An error occurred while adding the schedule.");
     }
   };
+  
 
   // Render the appropriate view based on the `view` state
   const renderView = () => {

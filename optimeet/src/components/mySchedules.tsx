@@ -108,7 +108,7 @@ export default function MySchedules() {
               <h2>{schedule.title}</h2>
               <p>{schedule.description}</p>
               <p>Start: {new Date(schedule.startDateTime).toLocaleString()}</p>
-              <p>End: {new Date(schedule.endDateTime).toLocaleString()}</p>
+              <p>End: {new Date(schedule.endDateTime).toLocaleString()}</p> 
               <p>All Day: {schedule.isAllDay ? "Yes" : "No"}</p>
               <p>Repeat: {schedule.repeat}</p>
             </li>
