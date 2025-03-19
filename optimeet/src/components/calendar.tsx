@@ -64,7 +64,6 @@ type CalendarProps = ReadOnlyCalendarProps | EditableCalendarProps;
 
 const Calendar: React.FC<CalendarProps> = ({
   schedules,
-  setSchedules,
   fetchSchedules,
   updateDateTime,
   view,
@@ -209,7 +208,6 @@ const Calendar: React.FC<CalendarProps> = ({
       });
   
       if (response.ok) {
-        const newSchedule = await response.json(); // get the new schedule data from the API
         alert("Schedule added successfully!");
   
         await fetchSchedules?.();
@@ -622,7 +620,6 @@ const renderDayView = ({
   );
 };
 
-
 const renderWeekView = ({
   handleAddSchedule,
   currentDate,
@@ -955,7 +952,6 @@ const renderWeekView = ({
     </div>
   );
 };
-
 
 const renderMonthView = ({
   currentDate,
