@@ -27,8 +27,14 @@ export async function GET(req: Request) {
     console.log(`✅ Retrieved ${schedules.length} schedules for userId: ${userId}`);
 
     return NextResponse.json({ schedules }, { status: 200 });
-  } catch (error: any) {
-    console.error("❌ Unexpected error:", error);
-    return NextResponse.json({ error: error.message || 'Unexpected server error' }, { status: 500 });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error("❌ Unexpected error:", error.message);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+  
+    console.error("❌ Unknown error:", error);
+    return NextResponse.json({ error: 'Unexpected server error' }, { status: 500 });
   }
+  
 }
