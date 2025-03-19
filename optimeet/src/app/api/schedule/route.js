@@ -1,10 +1,31 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { createClient } from '@supabase/supabase-js';
 
-// POST: Create a new schedule
 export async function POST(request) {
   try {
-    // Parse the request body
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+    console.log('🔑 Incoming Bearer token:', token);
+
+    if (!token) {
+      return NextResponse.json({ error: 'No access token provided' }, { status: 401 });
+    }
+
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      }
+    );
+
+    const body = await request.json();
+
+    console.log('Received POST body:', body);
+
     const {
       type,
       title,
@@ -14,9 +35,8 @@ export async function POST(request) {
       isAllDay,
       repeat,
       userId,
-    } = await request.json();
+    } = body;
 
-    // Validate required fields
     if (!type || !title || !startDateTime || !endDateTime || !userId) {
       return NextResponse.json(
         { error: 'Missing required fields' },
@@ -24,53 +44,38 @@ export async function POST(request) {
       );
     }
 
-    // Save the event to the database
-    const newEvent = await prisma.schedule.create({
-      data: {
-        type,
-        title,
-        description,
-        startDateTime: new Date(startDateTime),
-        endDateTime: new Date(endDateTime),
-        isAllDay,
-        repeat,
-        status: 'CONFIRMED', // Default status
-        userId, // Associate the event with the logged-in user
-      },
-    });
+    const { data, error } = await supabase
+      .from('Schedule')
+      .insert([
+        {
+          type,
+          title,
+          description,
+          startDateTime,
+          endDateTime,
+          isAllDay,
+          repeat,
+          status: 'CONFIRMED',
+          userId,
+        },
+      ])
+      .select();
 
-    return NextResponse.json(newEvent, { status: 201 });
+    console.log('🟢 Supabase insert data:', data);
+    console.log('🔴 Supabase insert error:', error);
+
+    if (error) {
+      return NextResponse.json(
+        { error: error.message || 'Failed to create event' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(data[0], { status: 201 });
   } catch (error) {
-    console.error('Error creating event:', error);
+    console.error('❌ Error creating event:', error);
     return NextResponse.json(
       { error: error.message || 'Failed to create event' },
-      { status: 500 }
-    );
-  }
-}
-
-// GET: Fetch all schedules (optionally filter by user)
-export async function GET(request) {
-  try {
-    // If you want to filter by userId in query params
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
-
-    const whereClause = userId ? { userId } : {};
-
-    // Fetch schedules from the database
-    const schedules = await prisma.schedule.findMany({
-      where: whereClause,
-      orderBy: {
-        startDateTime: 'asc', // Optional: sort by start date
-      },
-    });
-
-    return NextResponse.json(schedules, { status: 200 });
-  } catch (error) {
-    console.error('Error fetching schedules:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch schedules' },
       { status: 500 }
     );
   }

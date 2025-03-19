@@ -84,6 +84,7 @@ const Calendar: React.FC<CalendarProps> = ({
 
   const [userId, setUserId] = useState<string | null>(null);
 
+
   useEffect(() => {
     const fetchUserId = async () => {
       const { data: { user }, error } = await supabase.auth.getUser();
@@ -192,9 +193,21 @@ const Calendar: React.FC<CalendarProps> = ({
     }
   
     try {
+      const { data, error } = await supabase.auth.getSession();
+
+        if (error || !data.session) {
+          console.error('⚠️ No session found:', error);
+          return; // Stop the request if there's no session
+        }
+
+          const session = data.session;
+
       const response = await fetch("/api/schedule", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`, // 👈 Pass the token!
+        },
         body: JSON.stringify({
           type: formData.type,
           title: formData.title,
