@@ -67,6 +67,25 @@ const Calendar: React.FC<CalendarProps> = ({
     repeat: null,
   });
 
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchUserId = async () => {
+      const { data: { user }, error } = await supabase.auth.getUser();
+  
+      if (error || !user) {
+        console.error("No user found or error fetching user:", error);
+        setUserId(null);
+        return;
+      }
+  
+      setUserId(user.id);
+    };
+  
+    fetchUserId();
+  }, []);
+  
+  
   // Notify the parent component of date changes
   useEffect(() => {
     updateDateTime(currentDate);
@@ -116,7 +135,6 @@ const Calendar: React.FC<CalendarProps> = ({
   };
 
   // ✅ Handle adding a new schedule
-
   const handleAddSchedule = async ({
     formData,
     selectedSlot,
@@ -126,32 +144,29 @@ const Calendar: React.FC<CalendarProps> = ({
     selectedSlot: { date: Date; hour: number; endDate: Date } | null;
     closePopover: () => void;
   }) => {
-    if (isReadOnly) return; // Disable schedule creation in read-only mode
+    if (isReadOnly) return;
   
     if (!selectedSlot) {
       alert("No time slot selected!");
       return;
     }
   
-    const { data: { user } } = await supabase.auth.getUser();
-  
-    if (!user) {
+    if (!userId) {
       alert("You must be logged in to add a schedule.");
       return;
     }
   
-    const userId = user.id;
+    // Use local time directly if you don't want UTC conversion
+    const startDateTime = selectedSlot.date.toISOString();
+    const endDateTime = selectedSlot.endDate.toISOString();
   
-    // ✅ No UTC conversion, use local dates directly
-    const startDateTime = selectedSlot.date;      // Local date-time
-    const endDateTime = selectedSlot.endDate;     // Local date-time
-  
-    // ✅ Conflict checker (still works fine with local dates)
+    // ✅ Conflict checker:
     const hasConflict = schedules.some((existing) => {
       const existingStart = new Date(existing.startDateTime).getTime();
       const existingEnd = new Date(existing.endDateTime).getTime();
   
-      return startDateTime.getTime() < existingEnd && endDateTime.getTime() > existingStart;
+      return new Date(startDateTime).getTime() < existingEnd &&
+             new Date(endDateTime).getTime() > existingStart;
     });
   
     if (hasConflict) {
@@ -167,9 +182,8 @@ const Calendar: React.FC<CalendarProps> = ({
           type: formData.type,
           title: formData.title,
           description: formData.description,
-          // ✅ No .toISOString(), send the date directly or format as needed
-          startDateTime: startDateTime.toString(),  // Or .toLocaleString() if needed
-          endDateTime: endDateTime.toString(),      // Or .toLocaleString() if needed
+          startDateTime: startDateTime, // already an ISO string
+          endDateTime: endDateTime,     // already an ISO string
           isAllDay: formData.isAllDay || false,
           repeat: formData.repeat || 'None',
           userId,
@@ -180,7 +194,8 @@ const Calendar: React.FC<CalendarProps> = ({
         alert("Schedule added successfully!");
         closePopover();
       } else {
-        alert("Failed to add schedule!");
+        const errorData = await response.json();
+        alert(`Failed to add schedule: ${errorData.error}`);
       }
     } catch (error) {
       console.error("Error adding schedule:", error);
@@ -188,17 +203,26 @@ const Calendar: React.FC<CalendarProps> = ({
     }
   };
   
+  
 
   // Render the appropriate view based on the `view` state
   const renderView = () => {
     switch (view) {
       case "day":
         return renderDayView({
-          handleAddSchedule: isReadOnly ? () => {} : handleAddSchedule,
+          handleAddSchedule, // ✅ Pass it in
           currentDate,
           selectedSlot,
           setSelectedSlot,
-          formData: isReadOnly ? { type: ScheduleType.TASK, title: "", description: "", isAllDay: false, repeat: null } : formData,
+          formData: isReadOnly
+            ? {
+                type: ScheduleType.TASK,
+                title: "",
+                description: "",
+                isAllDay: false,
+                repeat: null,
+              }
+            : formData,
           setFormData: isReadOnly ? () => {} : setFormData,
           goToPreviousDay,
           goToNextDay,
@@ -208,11 +232,20 @@ const Calendar: React.FC<CalendarProps> = ({
         });
       case "week":
         return renderWeekView({
+          handleAddSchedule, // ✅ Pass it in
           currentDate,
           setCurrentDate,
           selectedSlot,
           setSelectedSlot,
-          formData: isReadOnly ? { type: ScheduleType.TASK, title: "", description: "", isAllDay: false, repeat: null } : formData,
+          formData: isReadOnly
+            ? {
+                type: ScheduleType.TASK,
+                title: "",
+                description: "",
+                isAllDay: false,
+                repeat: null,
+              }
+            : formData,
           setFormData: isReadOnly ? () => {} : setFormData,
           schedules,
           setView,
@@ -297,18 +330,319 @@ const renderDayView = ({
     );
   });
 
-  // Debugging: Log schedules for the current day
-  console.log("Schedules for the day:", schedulesForTheDay);
-
   const handleEventSlotClick = (hour: number) => {
     const selectedDate = new Date(currentDate);
+    selectedDate.setHours(hour, 0, 0, 0);
+
+    const endDate = new Date(selectedDate.getTime());
+    endDate.setHours(endDate.getHours() + 1);
+
+    setSelectedSlot({ date: selectedDate, hour, endDate });
+    console.log("✅ Slot Selected", {
+      start: selectedDate,
+      end: endDate,
+    });
+  };
+
+  const closePopover = () => {
+    setSelectedSlot(null);
+  };
+
+  const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    // ✅ Validation
+    if (!selectedSlot) {
+      alert("❗ Please select a time slot.");
+      return;
+    }
+
+    if (isNaN(selectedSlot.date.getTime()) || isNaN(selectedSlot.endDate.getTime())) {
+      alert("❗ Invalid date/time selected.");
+      console.error("❗ Invalid selectedSlot:", selectedSlot);
+      return;
+    }
+
+    // ✅ Call the actual add schedule handler
+    await handleAddSchedule({
+      formData,
+      selectedSlot,
+      closePopover,
+    });
+  };
+
+  const formatDateTimeLocal = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+
+    return `${year}-${month}-${day}T${hours}:00`;
+  };
+
+  const isPastTimeSlot = (hour: number) => {
+    const now = new Date();
+    const slotTime = new Date(currentDate);
+    slotTime.setHours(hour, 0, 0, 0);
+    return slotTime < now;
+  };
+
+  const isOccupiedTimeSlot = (hour: number) => {
+    return schedulesForTheDay.some((schedule) => {
+      const startHour = new Date(schedule.startDateTime).getHours();
+      const endHour = new Date(schedule.endDateTime).getHours();
+
+      return hour >= startHour && hour < endHour;
+    });
+  };
+
+  return (
+    <div className={styles.dayView}>
+      {/* Header */}
+      <div className={styles.dayViewHeader}>
+        <div className={styles.navigationButtons}>
+          <button onClick={goToPreviousDay}>
+            <Image src="/back.png" alt="Previous Day" width={24} height={24} />
+          </button>
+          <button onClick={goToNextDay}>
+            <Image src="/next.png" alt="Next Day" width={24} height={24} />
+          </button>
+        </div>
+
+        <div>
+          <h2>{currentDay}</h2>
+          <p>{currentDateFormatted}</p>
+        </div>
+
+        <div className={styles.viewSelector}>
+          <select
+            className={styles.viewDropdown}
+            value="day"
+            onChange={(e) => setView(e.target.value as CalendarView)}
+          >
+            <option value="day">Day</option>
+            <option value="week">Week</option>
+            <option value="month">Month</option>
+            <option value="year">Year</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Time Slots */}
+      <div className={styles.dayViewColumns}>
+        <div className={styles.timeColumn}>
+          {hours.map((hour) => (
+            <div
+              key={hour}
+              className={`${styles.timeSlot} ${hour === currentHour ? styles.currentTime : ""}`}
+            >
+              {new Date(0, 0, 0, hour).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </div>
+          ))}
+        </div>
+
+        <div className={styles.eventsColumn}>
+          {hours.map((hour) => {
+            const isOccupied = isOccupiedTimeSlot(hour);
+            const isSelected = selectedSlot && selectedSlot.hour === hour;
+            const isPast = isPastTimeSlot(hour);
+
+            return (
+              <div
+                key={hour}
+                onClick={!isPast && !isOccupied ? () => handleEventSlotClick(hour) : undefined}
+                className={`
+                  ${styles.eventSlot}
+                  ${hour === currentHour ? styles.currentTime : ""}
+                  ${isOccupied ? styles.occupiedSlot : ""}
+                  ${isSelected ? styles.selectedSlot : ""}
+                  ${isPast ? styles.pastSlot : ""}
+                `}
+                style={{ cursor: isPast || isOccupied ? "not-allowed" : "pointer" }}
+              >
+                {isOccupied && <span className={styles.eventLabel}>Scheduled</span>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Popover Form */}
+      {selectedSlot && (
+        <div className={styles.popover}>
+          <div className={styles.popoverContent}>
+            <h3>Add Schedule</h3>
+            <form onSubmit={handleFormSubmit}>
+              <label>
+                Type:
+                <select
+                  name="type"
+                  value={formData.type}
+                  onChange={(e) =>
+                    setFormData({ ...formData, type: e.target.value as ScheduleType })
+                  }
+                  required
+                >
+                  <option value="TASK">Task</option>
+                  <option value="APPOINTMENT">Appointment</option>
+                  <option value="RESTDAY">Rest Day</option>
+                  <option value="BLOCK">Block</option>
+                </select>
+              </label>
+
+              <label>
+                Title:
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  required
+                />
+              </label>
+
+              <label>
+                Description:
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                />
+              </label>
+
+              <label>
+                Start Date:
+                <input
+                  type="datetime-local"
+                  value={formatDateTimeLocal(selectedSlot.date)}
+                  disabled
+                />
+              </label>
+
+              <label>
+                End Date:
+                <input
+                  type="datetime-local"
+                  value={formatDateTimeLocal(selectedSlot.endDate)}
+                  onChange={(e) => {
+                    const newEnd = new Date(e.target.value);
+                    if (!isNaN(newEnd.getTime())) {
+                      setSelectedSlot({ ...selectedSlot, endDate: newEnd });
+                    }
+                  }}
+                  step="3600"
+                />
+              </label>
+
+              <label>
+                All Day:
+                <input
+                  type="checkbox"
+                  checked={formData.isAllDay}
+                  onChange={(e) => setFormData({ ...formData, isAllDay: e.target.checked })}
+                />
+              </label>
+
+              <label>
+                Repeat:
+                <select
+                  value={formData.repeat ? formData.repeat.frequency : "NONE"}
+                  onChange={(e) => {
+                    const value = e.target.value as RepeatType["frequency"];
+                    setFormData({
+                      ...formData,
+                      repeat: value !== "NONE" ? { frequency: value } : null,
+                    });
+                  }}
+                  
+                >
+                  <option value="NONE">None</option>
+                  <option value="DAILY">Daily</option>
+                  <option value="WEEKLY">Weekly</option>
+                  <option value="MONTHLY">Monthly</option>
+                </select>
+              </label>
+
+              <div className={styles.popoverButtons}>
+                <button type="submit">Add Schedule</button>
+                <button type="button" onClick={closePopover}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+
+const renderWeekView = ({
+  handleAddSchedule,
+  currentDate,
+  setCurrentDate,
+  selectedSlot,
+  setSelectedSlot,
+  formData,
+  setFormData,
+  schedules,
+  setView,
+}: {
+  handleAddSchedule: ({
+    formData,
+    selectedSlot,
+    closePopover,
+  }: {
+    formData: FormData;
+    selectedSlot: { date: Date; hour: number; endDate: Date } | null;
+    closePopover: () => void;
+  }) => void;
+  currentDate: Date;
+  setCurrentDate: (date: Date) => void;
+  selectedSlot: { date: Date; hour: number; endDate: Date } | null;
+  setSelectedSlot: (slot: { date: Date; hour: number; endDate: Date } | null) => void;
+  formData: FormData;
+  setFormData: (data: FormData) => void;
+  schedules: Schedule[];
+  setView: (view: CalendarView) => void;
+}) => {
+  const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const hours = Array.from({ length: 24 }, (_, i) => i);
+
+  const startOfWeek = new Date(currentDate);
+  startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
+
+  const now = new Date();
+  const currentHour = now.getHours();
+  const currentDay = now.getDate();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  const formatDateTimeLocal = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+
+    return `${year}-${month}-${day}T${hours}:00`;
+  };
+
+  const handleEventSlotClick = (dayIndex: number, hour: number) => {
+    const selectedDate = new Date(startOfWeek);
+    selectedDate.setDate(startOfWeek.getDate() + dayIndex);
     selectedDate.setHours(hour, 0, 0, 0);
 
     const endDate = new Date(selectedDate);
     endDate.setHours(hour + 1, 0, 0, 0);
 
     setSelectedSlot({ date: selectedDate, hour, endDate });
-    console.log("Selected slot:", selectedDate);
+
+    console.log("✅ Slot selected in week view:", {
+      start: selectedDate,
+      end: endDate,
+    });
   };
 
   const closePopover = () => {
@@ -329,71 +663,71 @@ const renderDayView = ({
 
   const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    await handleAddSchedule({ formData, selectedSlot, closePopover });
+
+    // ✅ Validation
+    if (!selectedSlot) {
+      alert("❗ Please select a time slot.");
+      return;
+    }
+
+    if (selectedSlot.endDate <= selectedSlot.date) {
+      alert("❗ End date must be after start date.");
+      return;
+    }
+
+    // ✅ Call the provided handleAddSchedule function
+    await handleAddSchedule({
+      formData,
+      selectedSlot,
+      closePopover,
+    });
   };
 
-  const formatDateTimeLocal = (date: Date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const hours = String(date.getHours()).padStart(2, "0");
-    return `${year}-${month}-${day}T${hours}:00`;
+  const isPastTimeSlot = (dayIndex: number, hour: number) => {
+    const slotDate = new Date(startOfWeek);
+    slotDate.setDate(startOfWeek.getDate() + dayIndex);
+    slotDate.setHours(hour, 0, 0, 0);
+    return slotDate < now;
   };
 
-  // Function to check if a time slot is in the past
-  const isPastTimeSlot = (hour: number) => {
-    const now = new Date();
-    const slotTime = new Date(currentDate);
-    slotTime.setHours(hour, 0, 0, 0);
-    return slotTime < now;
-  };
+  const isOccupiedTimeSlot = (dayIndex: number, hour: number) => {
+    const slotDate = new Date(startOfWeek);
+    slotDate.setDate(startOfWeek.getDate() + dayIndex);
+    slotDate.setHours(hour, 0, 0, 0);
 
-  // Function to check if a time slot is occupied
-  const isOccupiedTimeSlot = (hour: number) => {
-    return schedulesForTheDay.some((schedule) => {
-      const startHour = new Date(schedule.startDateTime).getHours();
-      const endHour = new Date(schedule.endDateTime).getHours();
+    return schedules.some((schedule) => {
+      const startDateTime = new Date(schedule.startDateTime);
+      const endDateTime = new Date(schedule.endDateTime);
 
-      // Check if the current hour falls within the schedule's time range
-      return hour >= startHour && hour < endHour;
+      return slotDate >= startDateTime && slotDate < endDateTime;
     });
   };
 
   return (
-    <div className={styles.dayView}>
-      {/* Header for Day View */}
-      <div className={styles.dayViewHeader}>
-        {/* Navigation Buttons (Left Side) */}
+    <div className={styles.weekView}>
+      {/* Header */}
+      <div className={styles.weekViewHeader}>
         <div className={styles.navigationButtons}>
-          <button onClick={goToPreviousDay}>
-          <Image
-              src="/back.png"
-              alt="Previous Day"
-              width={24} // Set the width of the image
-              height={24} // Set the height of the image
-            />
+          <button onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() - 7)))}>
+            <Image src="/back.png" alt="Previous Week" width={24} height={24} />
           </button>
-          <button onClick={goToNextDay}>
-          <Image
-              src="/next.png"
-              alt="Next Day"
-              width={24} // Set the width of the image
-              height={24} // Set the height of the image
-            />
+          <button onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() + 7)))}>
+            <Image src="/next.png" alt="Next Week" width={24} height={24} />
           </button>
         </div>
 
-        {/* Day and Date (Centered) */}
-        <div>
-          <h2>{currentDay}</h2>
-          <p>{currentDateFormatted}</p>
-        </div>
+        <h2>
+          {startOfWeek.toLocaleString("default", { month: "short", day: "numeric" })} -{" "}
+          {new Date(startOfWeek.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleString("default", {
+            month: "short",
+            day: "numeric",
+          })}
+        </h2>
 
-        {/* Dropdown for View Selection (Right Side) */}
         <div className={styles.viewSelector}>
           <select
             className={styles.viewDropdown}
-            value="day" // Set the value to "day" since this is the day view
+            value="week"
             onChange={(e) => setView(e.target.value as CalendarView)}
           >
             <option value="day">Day</option>
@@ -404,365 +738,13 @@ const renderDayView = ({
         </div>
       </div>
 
-      {/* Main view */}
-      <div className={styles.dayViewColumns}>
-        {/* Time Column */}
-        <div className={styles.timeColumn}>
-          {hours.map((hour) => (
-            <div
-              key={hour}
-              className={`${styles.timeSlot} ${hour === currentHour ? styles.currentTime : ""}`}
-            >
-              {new Date(0, 0, 0, hour).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </div>
-          ))}
-        </div>
-
-        {/* Events Column */}
-        <div className={styles.eventsColumn}>
-          {hours.map((hour) => {
-            const isOccupied = isOccupiedTimeSlot(hour); // Check if the time slot is occupied
-            const isSelected = selectedSlot && selectedSlot.hour === hour;
-            const isPast = isPastTimeSlot(hour); // Check if the time slot is in the past
-
-            return (
-              <div
-                key={hour}
-                onClick={!isPast && !isOccupied ? () => handleEventSlotClick(hour) : undefined} // Disable click for past and occupied slots
-                className={`
-                  ${styles.eventSlot}
-                  ${hour === currentHour ? styles.currentTime : ""}
-                  ${isOccupied ? styles.occupiedSlot : ""}
-                  ${isSelected ? styles.selectedSlot : ""}
-                  ${isPast ? styles.pastSlot : ""} // Apply a different style for past slots
-                `}
-                style={{ cursor: isPast || isOccupied ? "not-allowed" : "pointer" }} // Change cursor for past and occupied slots
-              >
-                {/* You can show an event title or icon here */}
-                {isOccupied && <span className={styles.eventLabel}>Scheduled</span>}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Popover */}
-      {selectedSlot && (
-        <div className={styles.popover}>
-          <div className={styles.popoverContent}>
-            <h3>Add Schedule</h3>
-            <form onSubmit={handleFormSubmit}>
-              <label>
-                Type:
-                <select
-                  name="type"
-                  value={formData.type}
-                  onChange={(e) =>
-                    setFormData({ ...formData, type: e.target.value as ScheduleType })
-                  }
-                  required
-                >
-                  <option value={ScheduleType.TASK}>Task</option>
-                  <option value={ScheduleType.APPOINTMENT}>Appointment</option>
-                  <option value={ScheduleType.RESTDAY}>Rest Day</option>
-                  <option value={ScheduleType.BLOCK}>Block</option>
-                </select>
-              </label>
-
-              <label>
-                Title:
-                <input
-                  type="text"
-                  name="title"
-                  value={formData.title}
-                  onChange={(e) =>
-                    setFormData({ ...formData, title: e.target.value })
-                  }
-                  required
-                />
-              </label>
-
-              <label>
-                Description:
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                />
-              </label>
-
-              <label>
-                Start Date:
-                <input
-                  type="datetime-local"
-                  name="startDateTime"
-                  value={formatDateTimeLocal(selectedSlot.date)}
-                  disabled
-                />
-              </label>
-
-              <label>
-                End Date:
-                <input
-                  type="datetime-local"
-                  name="endDateTime"
-                  value={formatDateTimeLocal(selectedSlot.endDate)}
-                  onChange={handleEndDateTimeChange}
-                  step="3600"
-                />
-              </label>
-
-              <label>
-                All Day:
-                <input
-                  type="checkbox"
-                  name="isAllDay"
-                  checked={formData.isAllDay}
-                  onChange={(e) =>
-                    setFormData({ ...formData, isAllDay: e.target.checked })
-                  }
-                />
-              </label>
-
-              <label>
-                Repeat:
-                <select
-                  name="repeat"
-                  value={formData.repeat ? formData.repeat.frequency : "NONE"}
-                  onChange={(e) => {
-                    const value = e.target.value as "NONE" | "DAILY" | "WEEKLY" | "MONTHLY";
-                    setFormData({
-                      ...formData,
-                      repeat: value !== "NONE" ? { frequency: value } : null,
-                    });
-                  }}
-                >
-                  <option value="NONE">None</option>
-                  <option value="DAILY">Daily</option>
-                  <option value="WEEKLY">Weekly</option>
-                  <option value="MONTHLY">Monthly</option>
-                </select>
-              </label>
-
-              <button type="submit">Add Schedule</button>
-              <button type="button" onClick={closePopover}>
-                Cancel
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-const renderWeekView = ({
-  currentDate,
-  setCurrentDate,
-  selectedSlot,
-  setSelectedSlot,
-  formData,
-  setFormData,
-  schedules,
-  setView,
-}: {
-  currentDate: Date;
-  setCurrentDate: (date: Date) => void;
-  selectedSlot: { date: Date; hour: number; endDate: Date } | null;
-  setSelectedSlot: (slot: { date: Date; hour: number; endDate: Date } | null) => void;
-  formData: FormData;
-  setFormData: (data: FormData) => void;
-  schedules: Schedule[];
-  setView: (view: CalendarView) => void;
-}) => {
-  const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  const hours = Array.from({ length: 24 }, (_, i) => i);
-
-  // Get the start of the week (Sunday)
-  const startOfWeek = new Date(currentDate);
-  startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
-
-  // Helper function to format date for datetime-local input
-  const formatDateTimeLocal = (date: Date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const hours = String(date.getHours()).padStart(2, "0");
-    return `${year}-${month}-${day}T${hours}:00`;
-  };
-
-  // Get the current date and time
-  const now = new Date();
-  const currentHour = now.getHours();
-  const currentDay = now.getDate();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
-
-  // Check if the current day falls within the displayed week
-  // const isCurrentWeek =
-  //   now >= startOfWeek && now < new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-  // Handle event slot click
-  const handleEventSlotClick = (dayIndex: number, hour: number) => {
-    const selectedDate = new Date(startOfWeek);
-    selectedDate.setDate(startOfWeek.getDate() + dayIndex);
-    selectedDate.setHours(hour, 0, 0, 0); // Set the selected hour
-
-    const endDate = new Date(selectedDate);
-    endDate.setHours(hour + 1, 0, 0, 0); // Set end time to 1 hour later
-
-    setSelectedSlot({ date: selectedDate, hour, endDate });
-  };
-
-  // Close the popover
-  const closePopover = () => {
-    setSelectedSlot(null);
-  };
-
-  // Handle end date and time change
-  const handleEndDateTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newEndDate = new Date(e.target.value);
-    newEndDate.setMinutes(0, 0);
-
-    if (!selectedSlot) return; // Guard against null
-
-    setSelectedSlot({
-      ...selectedSlot,
-      endDate: newEndDate,
-    });
-  };
-
-  // Handle form submission
-  const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    // Fetch the current user
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      alert("You must be logged in to add a schedule.");
-      return;
-    }
-
-    const userId = user.id; // This is a string
-
-    // Check if the end date is after the start date
-    if (selectedSlot!.endDate <= selectedSlot!.date) {
-      alert("End date must be after the start date.");
-      return;
-    }
-
-    // Prepare schedule data
-    const scheduleData = {
-      ...formData,
-      startDateTime: selectedSlot!.date.toISOString(),
-      endDateTime: selectedSlot!.endDate.toISOString(),
-      userId, // Use the user ID from Supabase
-    };
-
-    // Submit the schedule data to the backend
-    try {
-      const response = await fetch("/api/schedule", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(scheduleData),
-      });
-
-      if (response.ok) {
-        alert("Schedule added successfully!");
-        closePopover();
-      } else {
-        const errorData = await response.json();
-        alert(`Failed to add schedule: ${errorData.error}`);
-      }
-    } catch (error) {
-      console.error("Error submitting schedule:", error);
-      alert("An error occurred while adding the schedule.");
-    }
-  };
-
-  // Function to check if a time slot is in the past
-  const isPastTimeSlot = (dayIndex: number, hour: number) => {
-    const slotDate = new Date(startOfWeek);
-    slotDate.setDate(startOfWeek.getDate() + dayIndex);
-    slotDate.setHours(hour, 0, 0, 0);
-    return slotDate < now;
-  };
-
-  // Function to check if a time slot is occupied
-  const isOccupiedTimeSlot = (dayIndex: number, hour: number) => {
-    const slotDate = new Date(startOfWeek);
-    slotDate.setDate(startOfWeek.getDate() + dayIndex);
-    slotDate.setHours(hour, 0, 0, 0);
-
-    return schedules.some((schedule) => {
-      const startDateTime = new Date(schedule.startDateTime);
-      const endDateTime = new Date(schedule.endDateTime);
-      return slotDate >= startDateTime && slotDate < endDateTime;
-    });
-  };
-
-  return (
-    <div className={styles.weekView}>
-        {/* Header for Week View */}
-        <div className={styles.weekViewHeader}>
-          {/* Navigation Buttons (Left Side) */}
-          <div className={styles.navigationButtons}>
-            <button onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() - 7)))}>
-            <Image
-              src="/back.png"
-              alt="Previous Week"
-              width={24} // Set the width of the image
-              height={24} // Set the height of the image
-            />
-            </button>
-            <button onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() + 7)))}>
-            <Image
-              src="/next.png"
-              alt="Next Week"
-              width={24} // Set the width of the image
-              height={24} // Set the height of the image
-            />
-            </button>
-          </div>
-
-          {/* Week Range (Centered) */}
-          <h2>
-            {startOfWeek.toLocaleString("default", { month: "short", day: "numeric" })} -{" "}
-            {new Date(startOfWeek.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleString("default", {
-              month: "short",
-              day: "numeric",
-            })}
-          </h2>
-
-          {/* Dropdown for View Selection (Right Side) */}
-          <div className={styles.viewSelector}>
-            <select
-              className={styles.viewDropdown}
-              value="week" // Set the value to "week" since this is the week view
-              onChange={(e) => setView(e.target.value as CalendarView)}
-            >
-              <option value="day">Day</option>
-              <option value="week">Week</option>
-              <option value="month">Month</option>
-              <option value="year">Year</option>
-            </select>
-          </div>
-        </div>
-
-      {/* Week Header (Days of the Week) */}
+      {/* Week Grid */}
       <div className={styles.weekHeader}>
         <div className={styles.timeColumnHeader}></div>
         {daysOfWeek.map((day, index) => {
           const dayDate = new Date(startOfWeek);
           dayDate.setDate(startOfWeek.getDate() + index);
+
           return (
             <div key={index} className={styles.dayHeader}>
               <div>{day}</div>
@@ -772,7 +754,6 @@ const renderWeekView = ({
         })}
       </div>
 
-      {/* Week Body (Time Slots and Events) */}
       <div className={styles.weekBody}>
         <div className={styles.timeColumn}>
           {hours.map((hour) => (
@@ -784,12 +765,12 @@ const renderWeekView = ({
             </div>
           ))}
         </div>
+
         <div className={styles.daysColumns}>
-          {daysOfWeek.map((day, dayIndex) => {
+          {daysOfWeek.map((_, dayIndex) => {
             const dayDate = new Date(startOfWeek);
             dayDate.setDate(startOfWeek.getDate() + dayIndex);
 
-            // Check if this is the current day
             const isCurrentDay =
               dayDate.getDate() === currentDay &&
               dayDate.getMonth() === currentMonth &&
@@ -811,8 +792,14 @@ const renderWeekView = ({
                         ${isOccupied ? styles.occupiedSlot : ""}
                         ${isPast ? styles.pastSlot : ""}
                       `}
-                      onClick={!isPast && !isOccupied ? () => handleEventSlotClick(dayIndex, hour) : undefined}
-                      style={{ cursor: isPast || isOccupied ? "not-allowed" : "pointer" }}
+                      onClick={
+                        !isPast && !isOccupied
+                          ? () => handleEventSlotClick(dayIndex, hour)
+                          : undefined
+                      }
+                      style={{
+                        cursor: isPast || isOccupied ? "not-allowed" : "pointer",
+                      }}
                     >
                       {isOccupied && <span className={styles.eventLabel}>Scheduled</span>}
                     </div>
@@ -824,7 +811,7 @@ const renderWeekView = ({
         </div>
       </div>
 
-      {/* Popover for Adding Schedule */}
+      {/* Popover Form */}
       {selectedSlot && (
         <div className={styles.popover}>
           <div className={styles.popoverContent}>
@@ -835,81 +822,74 @@ const renderWeekView = ({
                 <select
                   name="type"
                   value={formData.type}
-                  onChange={(e) =>
-                    setFormData({ ...formData, type: e.target.value as ScheduleType })
-                  }
+                  onChange={(e) => setFormData({ ...formData, type: e.target.value as ScheduleType })}
                   required
                 >
-                  <option value={ScheduleType.TASK}>Task</option>
-                  <option value={ScheduleType.APPOINTMENT}>Appointment</option>
-                  <option value={ScheduleType.RESTDAY}>Rest Day</option>
-                  <option value={ScheduleType.BLOCK}>Block</option>
+                  <option value="TASK">Task</option>
+                  <option value="APPOINTMENT">Appointment</option>
+                  <option value="RESTDAY">Rest Day</option>
+                  <option value="BLOCK">Block</option>
                 </select>
               </label>
+
               <label>
                 Title:
                 <input
                   type="text"
-                  name="title"
                   value={formData.title}
-                  onChange={(e) =>
-                    setFormData({ ...formData, title: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   required
                 />
               </label>
+
               <label>
                 Description:
                 <textarea
-                  name="description"
                   value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
               </label>
+
               <label>
                 Start Date:
                 <input
                   type="datetime-local"
-                  name="startDateTime"
                   value={formatDateTimeLocal(selectedSlot.date)}
                   disabled
                 />
               </label>
+
               <label>
                 End Date:
                 <input
                   type="datetime-local"
-                  name="endDateTime"
                   value={formatDateTimeLocal(selectedSlot.endDate)}
                   onChange={handleEndDateTimeChange}
                   step="3600"
                 />
               </label>
+
               <label>
                 All Day:
                 <input
                   type="checkbox"
-                  name="isAllDay"
                   checked={formData.isAllDay}
-                  onChange={(e) =>
-                    setFormData({ ...formData, isAllDay: e.target.checked })
-                  }
+                  onChange={(e) => setFormData({ ...formData, isAllDay: e.target.checked })}
                 />
               </label>
+
               <label>
                 Repeat:
                 <select
-                  name="repeat"
                   value={formData.repeat ? formData.repeat.frequency : "NONE"}
                   onChange={(e) => {
-                    const value = e.target.value as "NONE" | "DAILY" | "WEEKLY" | "MONTHLY";
+                    const value = e.target.value as RepeatType["frequency"];
                     setFormData({
                       ...formData,
                       repeat: value !== "NONE" ? { frequency: value } : null,
                     });
                   }}
+                  
                 >
                   <option value="NONE">None</option>
                   <option value="DAILY">Daily</option>
@@ -917,10 +897,13 @@ const renderWeekView = ({
                   <option value="MONTHLY">Monthly</option>
                 </select>
               </label>
-              <button type="submit">Add Schedule</button>
-              <button type="button" onClick={closePopover}>
-                Cancel
-              </button>
+
+              <div className={styles.popoverButtons}>
+                <button type="submit">Add Schedule</button>
+                <button type="button" onClick={closePopover}>
+                  Cancel
+                </button>
+              </div>
             </form>
           </div>
         </div>
@@ -928,6 +911,7 @@ const renderWeekView = ({
     </div>
   );
 };
+
 
 const renderMonthView = ({
   currentDate,
