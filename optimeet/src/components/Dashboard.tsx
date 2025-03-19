@@ -10,10 +10,26 @@ import Invitations from "@/components/invitations";
 import Settings from "@/components/settings";
 import styles from "./Dashboard.module.css";
 
+// Define Schedule interface (adjust if you have this globally)
+interface Schedule {
+  id: string;
+  type: string;
+  title: string;
+  description?: string;
+  startDateTime: Date; 
+  endDateTime: Date;   
+  isAllDay?: boolean;
+  repeat?: string;
+  status?: string;
+  userId: string;
+}
+
 export default function Dashboard() {
   const router = useRouter();
+
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [user, setUser] = useState<User | null>(null);
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [currentContent, setCurrentContent] = useState<
     "calendar" | "mySchedules" | "invitations" | "settings" | "profile"
   >("calendar");
@@ -25,10 +41,11 @@ export default function Dashboard() {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Check session on component mount
+  // ✅ Get the authenticated user on mount
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
+
       if (!session) {
         router.push("/login");
       } else {
@@ -39,13 +56,51 @@ export default function Dashboard() {
     checkSession();
   }, [router]);
 
-  // Handle logout
+  // ✅ Fetch schedules after user is authenticated
+  useEffect(() => {
+    const fetchSchedules = async () => {
+      if (!user) return;
+  
+      try {
+        const response = await fetch(`/api/schedules-by-user-id?userId=${user.id}`);
+        if (!response.ok) {
+          console.error("Failed to fetch schedules");
+          return;
+        }
+  
+        const { schedules: fetchedSchedules } = await response.json();
+  
+        // ✅ Convert date strings to Date objects and adjust for local timezone
+        const convertedSchedules = fetchedSchedules.map((schedule: any) => {
+          // Parse the UTC date strings and convert them to local timezone
+          const startDateTime = new Date(schedule.startDateTime + "Z"); // Add "Z" to indicate UTC
+          const endDateTime = new Date(schedule.endDateTime + "Z"); // Add "Z" to indicate UTC
+  
+          return {
+            ...schedule,
+            startDateTime, // Converted to local timezone
+            endDateTime, // Converted to local timezone
+          };
+        });
+  
+        setSchedules(convertedSchedules);
+        console.log("✅ Schedules fetched & converted:", convertedSchedules);
+      } catch (error) {
+        console.error("Error fetching schedules:", error);
+      }
+    };
+  
+    fetchSchedules();
+  }, [user]);
+  
+
+  // ✅ Logout handler
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push("/login");
   };
 
-  // Adjust button position
+  // ✅ Sidebar toggle button positioning
   const adjustButtonPosition = useCallback(() => {
     const sidebar = sidebarRef.current;
     const header = headerRef.current;
@@ -54,26 +109,22 @@ export default function Dashboard() {
     if (sidebar && header && button) {
       const headerHeight = header.offsetHeight;
 
-      if (!sidebarVisible) {
-        button.style.left = "0";
-      } else {
-        button.style.left = `${-10}px`;
-      }
-
+      button.style.left = !sidebarVisible ? "0" : `${-10}px`;
       button.style.top = `${headerHeight / 2}px`;
     }
   }, [sidebarVisible]);
 
-  // Toggle sidebar visibility
+  // ✅ Toggle sidebar visibility
   const handleToggleSidebar = () => {
     setSidebarVisible((prev) => !prev);
   };
 
-  // Adjust button position on sidebar toggle or window resize
+  // ✅ Adjust button on sidebar toggle
   useEffect(() => {
     adjustButtonPosition();
   }, [sidebarVisible, adjustButtonPosition]);
 
+  // ✅ Window resize handler
   useEffect(() => {
     window.addEventListener("resize", adjustButtonPosition);
     adjustButtonPosition();
@@ -83,12 +134,12 @@ export default function Dashboard() {
     };
   }, [adjustButtonPosition]);
 
-  // Function to update current date and time
+  // ✅ DateTime update
   const updateDateTime = (dateTime: Date) => {
     setCurrentDateTime(dateTime);
   };
 
-  // Format the header display based on the calendar view
+  // ✅ Format the header display
   const formatHeaderDisplay = () => {
     switch (calendarView) {
       case "day":
@@ -98,13 +149,14 @@ export default function Dashboard() {
           month: "long",
           day: "numeric",
         });
-      case "week":
+      case "week": {
         const startOfWeek = new Date(currentDateTime);
         startOfWeek.setDate(currentDateTime.getDate() - currentDateTime.getDay());
         const endOfWeek = new Date(startOfWeek);
         endOfWeek.setDate(startOfWeek.getDate() + 6);
 
         return `${startOfWeek.toLocaleDateString()} - ${endOfWeek.toLocaleDateString()}`;
+      }
       case "month":
         return currentDateTime.toLocaleDateString("en-US", {
           year: "numeric",
@@ -122,13 +174,11 @@ export default function Dashboard() {
   return (
     <div
       ref={containerRef}
-      className={`${styles.container} ${
-        !sidebarVisible ? styles.hiddenSidebar : ""
-      }`}
+      className={`${styles.container} ${!sidebarVisible ? styles.hiddenSidebar : ""}`}
     >
       {/* Header */}
       <div ref={headerRef} className={styles.header}>
-        <div>{formatHeaderDisplay()}</div> {/* Display formatted date/time */}
+        <div>{formatHeaderDisplay()}</div>
         <button ref={buttonRef} onClick={handleToggleSidebar}>
           =
         </button>
@@ -137,22 +187,18 @@ export default function Dashboard() {
       {/* Sidebar */}
       {sidebarVisible && (
         <aside ref={sidebarRef} className={styles.sidebar}>
-          {/* Logo Section */}
           <div className={styles.sidebarLogoContainer}>
             <h2 className={styles.sidebarLogoText}>Optimeet</h2>
           </div>
 
-          {/* Profile Section */}
           <div className={styles.sidebarProfileContainer}>
             <p className={styles.sidebarWelcomeText}>
               Welcome, {user?.user_metadata?.name || user?.email || "?"}
             </p>
           </div>
 
-          {/* Navigation Section */}
           <nav className={styles.sidebarNavContainer}>
             <ul className={styles.sidebarNavList}>
-              {/* Profile Button */}
               <li className={styles.sidebarNavItem}>
                 <button
                   onClick={() => setCurrentContent("profile")}
@@ -161,8 +207,6 @@ export default function Dashboard() {
                   Profile
                 </button>
               </li>
-
-              {/* Dashboard Button */}
               <li className={styles.sidebarNavItem}>
                 <button
                   onClick={() => setCurrentContent("calendar")}
@@ -171,8 +215,6 @@ export default function Dashboard() {
                   Dashboard
                 </button>
               </li>
-
-              {/* My Schedules Button */}
               <li className={styles.sidebarNavItem}>
                 <button
                   onClick={() => setCurrentContent("mySchedules")}
@@ -181,8 +223,6 @@ export default function Dashboard() {
                   My Schedules
                 </button>
               </li>
-
-              {/* Invitations Button */}
               <li className={styles.sidebarNavItem}>
                 <button
                   onClick={() => setCurrentContent("invitations")}
@@ -191,8 +231,6 @@ export default function Dashboard() {
                   Invitations
                 </button>
               </li>
-
-              {/* Settings Button */}
               <li className={styles.sidebarNavItem}>
                 <button
                   onClick={() => setCurrentContent("settings")}
@@ -201,8 +239,6 @@ export default function Dashboard() {
                   Settings
                 </button>
               </li>
-
-              {/* Logout Button */}
               <li className={styles.sidebarNavItem}>
                 <button
                   onClick={handleLogout}
@@ -220,9 +256,11 @@ export default function Dashboard() {
       <div className={styles.content}>
         {currentContent === "calendar" && (
           <Calendar
+            schedules={schedules}
             updateDateTime={updateDateTime}
             view={calendarView}
             setView={setCalendarView}
+            isReadOnly={false} // Allow schedule creation (default behavior)
           />
         )}
         {currentContent === "mySchedules" && <MySchedules />}

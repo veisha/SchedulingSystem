@@ -2,17 +2,26 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import styles from "./SharedSchedules.module.css"; // 📝 Ensure the filename matches your CSS file!
+import Calendar from "@/components/calendar";
+import styles from "./SharedSchedules.module.css";
 
-// Define the type for a schedule
 interface Schedule {
   id: string;
+  type: string;
   title: string;
-  description: string;
-  startDateTime: string;
-  endDateTime: string;
-  isAllDay: boolean;
-  repeat: string;
+  description?: string;
+  startDateTime: Date;
+  endDateTime: Date;
+  isAllDay?: boolean;
+  repeat?: string;
+  status?: string;
+  userId: string;
+}
+
+interface User {
+  id: string;
+  email: string;
+  name: string;
 }
 
 export default function SharedSchedulesPage() {
@@ -23,10 +32,15 @@ export default function SharedSchedulesPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [calendarView, setCalendarView] = useState<"day" | "week" | "month" | "year">("month");
+
+  // ✅ User data state
+  const [user, setUser] = useState<User | null>(null);
+
   useEffect(() => {
     const fetchSharedSchedules = async () => {
       try {
-        console.log("🔎 Fetching schedules by userId...");
+        console.log("🔎 Fetching schedules and user info by userId...");
         console.log("➡️ userId from URL:", id);
 
         if (!id) {
@@ -35,19 +49,29 @@ export default function SharedSchedulesPage() {
           return;
         }
 
-        // ✅ Call the updated API route
+        // 🔥 1. Fetch schedules by userId
         const response = await fetch(`/api/schedules-by-user-id?userId=${id}`);
-
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.error || "Failed to fetch schedules");
         }
 
         const { schedules }: { schedules: Schedule[] } = await response.json();
-
         console.log("✅ Schedules fetched:", schedules);
 
         setSchedules(schedules);
+
+        // 🔥 2. Fetch user info by userId
+        const userResponse = await fetch(`/api/user-info?userId=${id}`);
+        if (!userResponse.ok) {
+          const userError = await userResponse.json();
+          throw new Error(userError.error || "Failed to fetch user info");
+        }
+
+        const { user }: { user: User } = await userResponse.json();
+        console.log("✅ User info fetched:", user);
+
+        setUser(user);
       } catch (error) {
         console.error("❗Fetch error:", error);
         setError(error instanceof Error ? error.message : "An unknown error occurred");
@@ -63,7 +87,7 @@ export default function SharedSchedulesPage() {
     return (
       <div className={styles.loadingContainer}>
         <div className={styles.spinner}></div>
-        <p>Loading shared schedules...</p>
+        <p>Loading schedules...</p>
       </div>
     );
   }
@@ -71,7 +95,6 @@ export default function SharedSchedulesPage() {
   if (error) {
     return (
       <div className={styles.container}>
-        <h1 className={styles.headingPrimary}>Shared Schedules</h1>
         <div className={styles.error}>Error: {error}</div>
       </div>
     );
@@ -79,33 +102,22 @@ export default function SharedSchedulesPage() {
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.headingPrimary}>Shared Schedules</h1>
-      <p className={styles.paragraph}>These schedules were shared with you.</p>
-
-      {schedules.length === 0 ? (
-        <p className={styles.paragraph}>No shared schedules found.</p>
-      ) : (
-        <ul className={styles.scheduleList}>
-          {schedules.map((schedule) => (
-            <li key={schedule.id} className={styles.scheduleItem}>
-              <h2 className={styles.headingSecondary}>{schedule.title}</h2>
-              <p className={styles.paragraph}>{schedule.description}</p>
-              <p className={styles.paragraph}>
-                <strong>Start:</strong> {new Date(schedule.startDateTime).toLocaleString()}
-              </p>
-              <p className={styles.paragraph}>
-                <strong>End:</strong> {new Date(schedule.endDateTime).toLocaleString()}
-              </p>
-              <p className={styles.paragraph}>
-                <strong>All Day:</strong> {schedule.isAllDay ? "Yes" : "No"}
-              </p>
-              <p className={styles.paragraph}>
-                <strong>Repeat:</strong> {schedule.repeat}
-              </p>
-            </li>
-          ))}
-        </ul>
+      {/* ✅ User Info Section */}
+      {user && (
+        <div className={styles.userInfo}>
+          <h2>Shared by: {user.name}</h2>
+          <p>Email: {user.email}</p>
+        </div>
       )}
+
+      {/* ✅ Calendar Component */}
+      <Calendar
+        schedules={schedules}
+        updateDateTime={() => {}}
+        view={calendarView}
+        setView={setCalendarView}
+        isReadOnly={true}
+      />
     </div>
   );
 }

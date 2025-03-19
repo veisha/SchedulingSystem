@@ -17,176 +17,64 @@ interface RepeatType {
   frequency: "NONE" | "DAILY" | "WEEKLY" | "MONTHLY";
 }
 
-interface FormData {
-  type: string;
-  title: string;
-  description: string;
-  isAllDay: boolean;
-  repeat: RepeatType | null;
-}
-
 interface Schedule {
   id: string;
   type: string;
   title: string;
   description?: string;
-  startDateTime: Date; 
-  endDateTime: Date;   
+  startDateTime: Date;
+  endDateTime: Date;
   isAllDay?: boolean;
   repeat?: string;
   status?: string;
   userId: string;
 }
 
-interface CalendarProps {
-  updateDateTime: (dateTime: Date) => void; // Add this prop
-  view: CalendarView; // Add this prop
-  setView: (view: CalendarView) => void; // Add this prop
+interface FormData {
+  type: ScheduleType;
+  title: string;
+  description: string;
+  isAllDay: boolean;
+  repeat: RepeatType | null;
 }
 
-const Calendar: React.FC<CalendarProps> = ({ updateDateTime, view, setView }) => {
+interface CalendarProps {
+  updateDateTime: (dateTime: Date) => void;
+  view: CalendarView;
+  setView: (view: CalendarView) => void;
+  schedules: Schedule[];
+  isReadOnly?: boolean;
+}
+
+const Calendar: React.FC<CalendarProps> = ({
+  updateDateTime,
+  view,
+  setView,
+  schedules,
+  isReadOnly = false,
+}) => {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [, setDays] = useState<Date[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<{ date: Date; hour: number; endDate: Date } | null>(null);
-  const [error, setError] = useState<string | null>(null); // Define error state
+
   const [formData, setFormData] = useState<FormData>({
-    type: "TASK",
+    type: ScheduleType.TASK,
     title: "",
     description: "",
     isAllDay: false,
     repeat: null,
   });
 
-  const [schedules, setSchedules] = useState<Schedule[]>([]);
-
   // Notify the parent component of date changes
   useEffect(() => {
     updateDateTime(currentDate);
   }, [currentDate, updateDateTime]);
 
-  const fetchSchedules = async (userId: string) => {
-    try {
-      const response = await fetch(`/api/schedule?userId=${userId}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch schedules');
-      }
-
-      const data = await response.json();
-      console.log("Raw data from API:", data);
-
-      // Map the schedules to include Date objects
-      const schedulesWithDates: Schedule[] = data.map((schedule: Schedule) => {
-        const start = new Date(schedule.startDateTime);
-        const end = new Date(schedule.endDateTime);
-
-        console.log("Mapped Schedule:", { ...schedule, start, end });
-
-        return {
-          ...schedule,
-          startDateTime: start,
-          endDateTime: end,
-        };
-      });
-
-      setSchedules(schedulesWithDates);
-    } catch (error) {
-      console.error("Error fetching schedules:", error);
-      setError(error instanceof Error ? error.message : 'An unknown error occurred');
-    }
-  };
-
-  useEffect(() => {
-    const fetchSchedulesForAuthenticatedUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        console.log(error);
-        return;
-      }
-
-      // Fetch schedules for the authenticated user
-      await fetchSchedules(user.id);
-    };
-
-    fetchSchedulesForAuthenticatedUser();
-  }, []);
-
-  const handleAddSchedule = async ({
-    formData,
-    selectedSlot,
-    closePopover,
-  }: {
-    formData: FormData;
-    selectedSlot: { date: Date; hour: number; endDate: Date } | null;
-    closePopover: () => void;
-  }) => {
-    if (!selectedSlot) {
-      alert("No time slot selected!");
-      return;
-    }
-
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      alert("You must be logged in to add a schedule.");
-      return;
-    }
-
-    const userId = user.id;
-
-    const newStart = selectedSlot.date.getTime();
-    const newEnd = selectedSlot.endDate.getTime();
-
-    // ✅ Conflict checker:
-    const hasConflict = schedules.some((existing) => {
-      const existingStart = existing.startDateTime.getTime();
-      const existingEnd = existing.endDateTime.getTime();
-
-      // Check overlap:
-      return newStart < existingEnd && newEnd > existingStart;
-    });
-
-    if (hasConflict) {
-      alert("There's a conflict with another schedule! Please select a different time.");
-      return;
-    }
-
-    // ✅ If no conflict, proceed to add the schedule:
-    try {
-      const response = await fetch("/api/schedule", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: formData.type,                   // Add this
-          title: formData.title,
-          description: formData.description,
-          startDateTime: selectedSlot.date,      // Correct naming
-          endDateTime: selectedSlot.endDate,     // Correct naming
-          isAllDay: formData.isAllDay || false,  // Optional, add if available
-          repeat: formData.repeat || 'None',     // Optional, add if available
-          userId             // ✅ This is required by the API!
-        }),
-      });
-
-      if (response.ok) {
-        fetchSchedules(userId); // Refresh the schedules
-        alert("Schedule added successfully!");
-        closePopover();
-      } else {
-        alert("Failed to add schedule!");
-      }
-    } catch (error) {
-      console.error("Error adding schedule:", error);
-      alert("An error occurred while adding the schedule.");
-    }
-  };
-  
   // For Month view: Generate all the days of the current month.
   useEffect(() => {
     if (view === "month") {
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth();
-      // const firstDay = new Date(year, month, 1);
       const lastDay = new Date(year, month + 1, 0);
       const daysArray: Date[] = [];
       for (let d = 1; d <= lastDay.getDate(); d++) {
@@ -225,17 +113,110 @@ const Calendar: React.FC<CalendarProps> = ({ updateDateTime, view, setView }) =>
     return -1; // No highlight if it's not the current day
   };
 
+  // ✅ Handle adding a new schedule
+
+  const handleAddSchedule = async ({
+    formData,
+    selectedSlot,
+    closePopover,
+  }: {
+    formData: FormData;
+    selectedSlot: { date: Date; hour: number; endDate: Date } | null;
+    closePopover: () => void;
+  }) => {
+    if (isReadOnly) return; // Disable schedule creation in read-only mode
+  
+    if (!selectedSlot) {
+      alert("No time slot selected!");
+      return;
+    }
+  
+    const { data: { user } } = await supabase.auth.getUser();
+  
+    if (!user) {
+      alert("You must be logged in to add a schedule.");
+      return;
+    }
+  
+    const userId = user.id;
+  
+    // Convert selectedSlot.date and selectedSlot.endDate to UTC
+    const startDateTimeUTC = new Date(
+      Date.UTC(
+        selectedSlot.date.getFullYear(),
+        selectedSlot.date.getMonth(),
+        selectedSlot.date.getDate(),
+        selectedSlot.date.getHours(),
+        selectedSlot.date.getMinutes(),
+        selectedSlot.date.getSeconds()
+      )
+    );
+  
+    const endDateTimeUTC = new Date(
+      Date.UTC(
+        selectedSlot.endDate.getFullYear(),
+        selectedSlot.endDate.getMonth(),
+        selectedSlot.endDate.getDate(),
+        selectedSlot.endDate.getHours(),
+        selectedSlot.endDate.getMinutes(),
+        selectedSlot.endDate.getSeconds()
+      )
+    );
+  
+    // ✅ Conflict checker:
+    const hasConflict = schedules.some((existing) => {
+      const existingStart = new Date(existing.startDateTime).getTime();
+      const existingEnd = new Date(existing.endDateTime).getTime();
+  
+      // Check overlap:
+      return startDateTimeUTC.getTime() < existingEnd && endDateTimeUTC.getTime() > existingStart;
+    });
+  
+    if (hasConflict) {
+      alert("There's a conflict with another schedule! Please select a different time.");
+      return;
+    }
+  
+    // ✅ If no conflict, proceed to add the schedule:
+    try {
+      const response = await fetch("/api/schedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: formData.type,
+          title: formData.title,
+          description: formData.description,
+          startDateTime: startDateTimeUTC.toISOString(), // Save in UTC
+          endDateTime: endDateTimeUTC.toISOString(), // Save in UTC
+          isAllDay: formData.isAllDay || false,
+          repeat: formData.repeat || 'None',
+          userId,
+        }),
+      });
+  
+      if (response.ok) {
+        alert("Schedule added successfully!");
+        closePopover();
+      } else {
+        alert("Failed to add schedule!");
+      }
+    } catch (error) {
+      console.error("Error adding schedule:", error);
+      alert("An error occurred while adding the schedule.");
+    }
+  };
+
   // Render the appropriate view based on the `view` state
   const renderView = () => {
     switch (view) {
       case "day":
         return renderDayView({
-          handleAddSchedule,
+          handleAddSchedule: isReadOnly ? () => {} : handleAddSchedule,
           currentDate,
           selectedSlot,
           setSelectedSlot,
-          formData,
-          setFormData,
+          formData: isReadOnly ? { type: ScheduleType.TASK, title: "", description: "", isAllDay: false, repeat: null } : formData,
+          setFormData: isReadOnly ? () => {} : setFormData,
           goToPreviousDay,
           goToNextDay,
           getCurrentHour,
@@ -248,8 +229,8 @@ const Calendar: React.FC<CalendarProps> = ({ updateDateTime, view, setView }) =>
           setCurrentDate,
           selectedSlot,
           setSelectedSlot,
-          formData,
-          setFormData,
+          formData: isReadOnly ? { type: ScheduleType.TASK, title: "", description: "", isAllDay: false, repeat: null } : formData,
+          setFormData: isReadOnly ? () => {} : setFormData,
           schedules,
           setView,
         });
@@ -323,6 +304,7 @@ const renderDayView = ({
     day: "numeric",
   });
 
+  // Filter schedules for the current day
   const schedulesForTheDay = schedules.filter((schedule) => {
     const scheduleDate = new Date(schedule.startDateTime);
     return (
@@ -331,6 +313,9 @@ const renderDayView = ({
       scheduleDate.getFullYear() === currentDate.getFullYear()
     );
   });
+
+  // Debugging: Log schedules for the current day
+  console.log("Schedules for the day:", schedulesForTheDay);
 
   const handleEventSlotClick = (hour: number) => {
     const selectedDate = new Date(currentDate);
@@ -385,44 +370,46 @@ const renderDayView = ({
     return schedulesForTheDay.some((schedule) => {
       const startHour = new Date(schedule.startDateTime).getHours();
       const endHour = new Date(schedule.endDateTime).getHours();
+
+      // Check if the current hour falls within the schedule's time range
       return hour >= startHour && hour < endHour;
     });
   };
 
   return (
-<div className={styles.dayView}>
-  {/* Header for Day View */}
-  <div className={styles.dayViewHeader}>
-    {/* Navigation Buttons (Left Side) */}
-    <div className={styles.navigationButtons}>
-      <button onClick={goToPreviousDay}>
-        <img src="/back.png" alt="Previous Day" />
-      </button>
-      <button onClick={goToNextDay}>
-        <img src="/next.png" alt="Next Day" />
-      </button>
-    </div>
+    <div className={styles.dayView}>
+      {/* Header for Day View */}
+      <div className={styles.dayViewHeader}>
+        {/* Navigation Buttons (Left Side) */}
+        <div className={styles.navigationButtons}>
+          <button onClick={goToPreviousDay}>
+            <img src="/back.png" alt="Previous Day" />
+          </button>
+          <button onClick={goToNextDay}>
+            <img src="/next.png" alt="Next Day" />
+          </button>
+        </div>
 
-    {/* Day and Date (Centered) */}
-    <div>
-      <h2>{currentDay}</h2>
-      <p>{currentDateFormatted}</p>
-    </div>
+        {/* Day and Date (Centered) */}
+        <div>
+          <h2>{currentDay}</h2>
+          <p>{currentDateFormatted}</p>
+        </div>
 
-    {/* Dropdown for View Selection (Right Side) */}
-    <div className={styles.viewSelector}>
-      <select
-        className={styles.viewDropdown}
-        value="day" // Set the value to "day" since this is the day view
-        onChange={(e) => setView(e.target.value as CalendarView)}
-      >
-        <option value="day">Day</option>
-        <option value="week">Week</option>
-        <option value="month">Month</option>
-        <option value="year">Year</option>
-      </select>
-    </div>
-  </div>
+        {/* Dropdown for View Selection (Right Side) */}
+        <div className={styles.viewSelector}>
+          <select
+            className={styles.viewDropdown}
+            value="day" // Set the value to "day" since this is the day view
+            onChange={(e) => setView(e.target.value as CalendarView)}
+          >
+            <option value="day">Day</option>
+            <option value="week">Week</option>
+            <option value="month">Month</option>
+            <option value="year">Year</option>
+          </select>
+        </div>
+      </div>
 
       {/* Main view */}
       <div className={styles.dayViewColumns}>
