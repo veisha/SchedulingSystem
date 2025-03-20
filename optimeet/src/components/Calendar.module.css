@@ -424,7 +424,7 @@
   background-color: white;
   padding: 1rem;
   border-radius: 0.5rem;
-  width: 300px;
+  width: 50%;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
@@ -463,6 +463,58 @@
 .popoverContent button[type="button"] {
   background-color: #ccc;
   color: black;
+}
+
+.proposedTimesList {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+}
+
+.proposedTimeItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  margin-bottom: 0.5rem;
+}
+
+.addAnother {
+  margin: 1rem 0;
+  text-align: center;
+}
+
+.timeInputs {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, 1fr);
+  margin-bottom: 1.5rem;
+}
+
+.addTimeButton {
+  grid-column: span 2;
+  padding: 0.5rem;
+  background: #0070f3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.proposedTimesList {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+}
+
+.proposedTimeItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  border: 1px solid #eee;
+  margin-bottom: 0.5rem;
 }
 
 .hourSlot {
@@ -525,4 +577,86 @@
 
 .currentTime {
   background-color: yellow; /* Highlight the current time slot in yellow */
+}
+
+
+
+/*appointment pop over*/
+
+.dateInputGroup {
+  margin-bottom: 1.5rem;
+}
+
+.dateInputRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 1rem;
+  align-items: end;
+}
+
+.addButton {
+  padding: 0.5rem 1rem;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.proposedDates {
+  margin: 1.5rem 0;
+}
+
+.dateItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem;
+  margin: 0.5rem 0;
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
+.removeButton {
+  padding: 0.3rem 0.8rem;
+  background: #ff4444;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.messageInput {
+  display: block;
+  margin: 1.5rem 0;
+}
+
+.messageInput textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 0.8rem;
+}
+
+.formActions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.primaryButton {
+  padding: 0.8rem 1.5rem;
+  background: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.secondaryButton {
+  padding: 0.8rem 1.5rem;
+  background: #ccc;
+  color: #333;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
 }

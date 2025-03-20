@@ -52,13 +52,9 @@ interface ReadOnlyCalendarProps extends BaseCalendarProps {
   setSchedules?: never;
   fetchSchedules?: never;
   
-  // ✅ Add this for appointment requests
-  onCreateAppointmentRequest?: ({
-    proposedTimes,
-    selectedTime,
-    message,
-  }: {
-    proposedTimes: string[];
+  // Updated type 👇
+  onCreateAppointmentRequest?: (params: {
+    proposedTimes: Array<{ start: string; end: string }>;
     selectedTime?: string;
     message?: string;
   }) => Promise<void>;
@@ -107,13 +103,20 @@ const Calendar: React.FC<CalendarProps> = (props) => {
 
   const [userId, setUserId] = useState<string | null>(null);
 
-  const [appointmentRequestData, setAppointmentRequestData] = useState<{
-    proposedTimes: string[];
+  type AppointmentRequestData = {
+    proposedTimes: Array<{ start: string; end: string }>;
     selectedTime?: string;
     message: string;
-  }>({
+    newStart?: string;
+    newEnd?: string;
+  };
+  
+  // In your state initialization:
+  const [appointmentRequestData, setAppointmentRequestData] = useState<AppointmentRequestData>({
     proposedTimes: [],
     message: "",
+    newStart: "",
+    newEnd: ""
   });
   
 
@@ -382,24 +385,28 @@ const renderDayView = ({
   schedules: Schedule[];
   setView: (view: CalendarView) => void;
   isReadOnly?: boolean; // ✅ New prop
-  onCreateAppointmentRequest?: (params: {
-    proposedTimes: string[];
-    selectedTime?: string;
-    message?: string;
-  }) => Promise<void>; // ✅ New prop
-   // 👇 Add these two types:
-   appointmentRequestData: {
-    proposedTimes: string[];
+  appointmentRequestData: {
+    proposedTimes: Array<{ start: string; end: string }>;
     selectedTime?: string;
     message: string;
+    newStart?: string; // 👈 Add this
+    newEnd?: string;   // 👈 Add this
   };
   setAppointmentRequestData: React.Dispatch<
-    React.SetStateAction<{
-      proposedTimes: string[];
-      selectedTime?: string;
-      message: string;
-    }>
-  >;
+  React.SetStateAction<{
+    proposedTimes: Array<{ start: string; end: string }>;
+    selectedTime?: string;
+    message: string;
+    newStart?: string;  // 👈 Add this
+    newEnd?: string;    // 👈 Add this
+  }>
+>;
+  
+  onCreateAppointmentRequest?: (params: {
+    proposedTimes: Array<{ start: string; end: string }>;
+    selectedTime?: string;
+    message?: string;
+  }) => Promise<void>;
 }) => {
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const currentHour = getCurrentHour();
@@ -436,26 +443,77 @@ const renderDayView = ({
   const handleEventSlotClick = (hour: number) => {
     const selectedDate = new Date(currentDate);
     selectedDate.setHours(hour, 0, 0, 0);
-    const endDate = new Date(selectedDate.getTime());
-    endDate.setHours(endDate.getHours() + 1);
-  
-    // For read-only mode: initialize appointment data
+    const endDate = new Date(selectedDate.getTime() + 60 * 60 * 1000);
+
     if (isReadOnly) {
-      setAppointmentRequestData({
-        proposedTimes: [selectedDate.toISOString(), endDate.toISOString()],
-        selectedTime: selectedDate.toISOString(),
-        message: ""
-      });
+      // Set initial time values when opening popover
+      setAppointmentRequestData(prev => ({
+        ...prev,
+        newStart: formatDateTimeLocal(selectedDate),
+        newEnd: formatDateTimeLocal(endDate)
+      }));
+      setSelectedSlot({ date: selectedDate, hour, endDate });
+      return;
     }
-  
+
     setSelectedSlot({ date: selectedDate, hour, endDate });
+  };
+
+  const handleAddProposedTime = () => {
+    if (!appointmentRequestData.newStart || !appointmentRequestData.newEnd) {
+      alert("Please fill in both start and end times");
+      return;
+    }
+
+    const startDate = new Date(appointmentRequestData.newStart);
+    const endDate = new Date(appointmentRequestData.newEnd);
+
+    if (startDate >= endDate) {
+      alert("End time must be after start time");
+      return;
+    }
+
+    if (startDate < new Date()) {
+      alert("Cannot add time slots in the past");
+      return;
+    }
+
+    // Check if any hour in the range is occupied
+    const startHour = startDate.getHours();
+    const endHour = endDate.getHours();
+    const isOccupied = Array.from({ length: endHour - startHour }, (_, i) => startHour + i)
+      .some(hour => isOccupiedTimeSlot(hour, startDate));
+
+    if (isOccupied) {
+      alert("One or more hours in this range are already occupied");
+      return;
+    }
+
+    setAppointmentRequestData(prev => ({
+      ...prev,
+      proposedTimes: [
+        ...prev.proposedTimes,
+        {
+          start: startDate.toISOString(),
+          end: endDate.toISOString()
+        }
+      ],
+      newStart: "",
+      newEnd: ""
+    }));
   };
   
 
   const closePopover = () => {
     setSelectedSlot(null);
+    // Reset appointment request data when closing
+    setAppointmentRequestData({
+      proposedTimes: [],
+      message: "",
+      newStart: "",
+      newEnd: ""
+    });
   };
-
   const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -592,59 +650,110 @@ const renderDayView = ({
       {selectedSlot && (
   <div className={styles.popover}>
     <div className={styles.popoverContent}>
-      {isReadOnly ? (
-        // Appointment Request Form
-        <>
-          <h3>Create Appointment Request</h3>
-          <form onSubmit={async (e) => {
+    {isReadOnly ? (
+          <>
+            <h3>Create Appointment Request</h3>
+            <form onSubmit={async (e) => {
               e.preventDefault();
+              if (!appointmentRequestData.proposedTimes.length) {
+                alert("Please add at least one proposed time");
+                return;
+              }
               if (onCreateAppointmentRequest) {
                 await onCreateAppointmentRequest({
-                  proposedTimes: [
-                    selectedSlot.date.toISOString(),
-                    selectedSlot.endDate.toISOString()
-                  ],
-                  selectedTime: selectedSlot.date.toISOString(),
-                  message: appointmentRequestData.message // Use the state
+                  proposedTimes: appointmentRequestData.proposedTimes,
+                  selectedTime: appointmentRequestData.selectedTime,
+                  message: appointmentRequestData.message
                 });
-                setSelectedSlot(null);
+                closePopover(); // Use modified close function
               }
             }}>
-            <label>
-              Proposed Time Slot:
-              <input
-                type="datetime-local"
-                value={formatDateTimeLocal(selectedSlot.date)}
-                disabled
-              />
-              <span> to </span>
-              <input
-                type="datetime-local"
-                value={formatDateTimeLocal(selectedSlot.endDate)}
-                disabled
-              />
-            </label>
+              {/* Date Input Section */}
+              <div className={styles.dateInputGroup}>
+                <div className={styles.dateInputRow}>
+                  <label>
+                    Start Date:
+                    <input
+                      type="datetime-local"
+                      value={appointmentRequestData.newStart}
+                      onChange={(e) => setAppointmentRequestData(prev => ({
+                        ...prev,
+                        newStart: e.target.value
+                      }))}
+                    />
+                  </label>
+                  <label>
+                    End Date:
+                    <input
+                      type="datetime-local"
+                      value={appointmentRequestData.newEnd}
+                      onChange={(e) => setAppointmentRequestData(prev => ({
+                        ...prev,
+                        newEnd: e.target.value
+                      }))}
+                    />
+                  </label>
+                  <button 
+                    type="button" 
+                    onClick={handleAddProposedTime}
+                    className={styles.addButton}
+                  >
+                    Add Date
+                  </button>
+                </div>
+              </div>
 
-            <label>
-              Message (optional):
-              <textarea
-                value={appointmentRequestData.message}
-                onChange={(e) => setAppointmentRequestData(prev => ({
-                  ...prev,
-                  message: e.target.value
-                }))}
-                placeholder="Add a message to the receiver"
-              />
-            </label>
+              {/* Proposed Dates List */}
+              <div className={styles.proposedDates}>
+                <h4>Proposed Dates:</h4>
+                {appointmentRequestData.proposedTimes.map((time, index) => (
+                  <div key={index} className={styles.dateItem}>
+                    <span>
+                      {new Date(time.start).toLocaleString()} - 
+                      {new Date(time.end).toLocaleString()}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setAppointmentRequestData(prev => ({
+                        ...prev,
+                        proposedTimes: prev.proposedTimes.filter((_, i) => i !== index)
+                      }))}
+                      className={styles.removeButton}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
 
-            <div className={styles.popoverButtons}>
-              <button type="submit">Send Request</button>
-              <button type="button" onClick={closePopover}>
-                Cancel
-              </button>
-            </div>
-          </form>
-        </>
+              {/* Message Input */}
+              <label className={styles.messageInput}>
+                Message:
+                <textarea
+                  value={appointmentRequestData.message}
+                  onChange={(e) => setAppointmentRequestData(prev => ({
+                    ...prev,
+                    message: e.target.value
+                  }))}
+                  placeholder="Optional message for the receiver"
+                />
+              </label>
+
+              {/* Form Buttons */}
+              <div className={styles.formActions}>
+                <button type="submit" className={styles.primaryButton}>
+                  Send Request
+                </button>
+                <button 
+                  type="button" 
+                  onClick={closePopover} 
+                  className={styles.secondaryButton}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+  </>
       ) : (
         // Existing Schedule Form
         <>
@@ -786,24 +895,24 @@ const renderWeekView = ({
   schedules: Schedule[];
   setView: (view: CalendarView) => void;
   isReadOnly?: boolean;
-  onCreateAppointmentRequest?: (params: {
-    proposedTimes: string[];
-    selectedTime?: string;
-    message?: string;
-  }) => Promise<void>;
-  // 👇 Add these two types:
   appointmentRequestData: {
-    proposedTimes: string[];
+    proposedTimes: Array<{ start: string; end: string }>;
     selectedTime?: string;
     message: string;
   };
   setAppointmentRequestData: React.Dispatch<
     React.SetStateAction<{
-      proposedTimes: string[];
+      proposedTimes: Array<{ start: string; end: string }>;
       selectedTime?: string;
       message: string;
     }>
   >;
+  
+  onCreateAppointmentRequest?: (params: {
+    proposedTimes: Array<{ start: string; end: string }>;
+    selectedTime?: string;
+    message?: string;
+  }) => Promise<void>;
 }) => {
   const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const hours = Array.from({ length: 24 }, (_, i) => i);
@@ -827,11 +936,21 @@ const renderWeekView = ({
     endDate.setHours(hour + 1, 0, 0, 0);
 
     if (isReadOnly) {
-      setAppointmentRequestData({
-        proposedTimes: [selectedDate.toISOString(), endDate.toISOString()],
-        selectedTime: selectedDate.toISOString(),
-        message: ""
-      });
+      const newProposedTime = {
+        start: selectedDate.toISOString(),
+        end: endDate.toISOString(),
+      };
+
+      setAppointmentRequestData((prev) => ({
+        ...prev,
+        proposedTimes: selectedSlot
+          ? [...prev.proposedTimes, newProposedTime]
+          : [newProposedTime],
+        selectedTime: selectedSlot ? prev.selectedTime : selectedDate.toISOString(),
+      }));
+
+      if (!selectedSlot) setSelectedSlot({ date: selectedDate, hour, endDate });
+      return;
     }
 
     setSelectedSlot({ date: selectedDate, hour, endDate });
@@ -964,12 +1083,15 @@ const renderWeekView = ({
       {selectedSlot && (
         <div className={styles.popover}>
           <div className={styles.popoverContent}>
-            {isReadOnly ? (
-              // Appointment Request Form
+              {isReadOnly ? (
               <>
                 <h3>Create Appointment Request</h3>
                 <form onSubmit={async (e) => {
                   e.preventDefault();
+                  if (!appointmentRequestData.proposedTimes.length) {
+                    alert("Please add at least one proposed time.");
+                    return;
+                  }
                   if (onCreateAppointmentRequest) {
                     await onCreateAppointmentRequest({
                       proposedTimes: appointmentRequestData.proposedTimes,
@@ -979,20 +1101,41 @@ const renderWeekView = ({
                     setSelectedSlot(null);
                   }
                 }}>
-                  <label>
-                    Proposed Time Slot:
-                    <input
-                      type="datetime-local"
-                      value={formatDateTimeLocal(selectedSlot.date)}
-                      disabled
-                    />
-                    <span> to </span>
-                    <input
-                      type="datetime-local"
-                      value={formatDateTimeLocal(selectedSlot.endDate)}
-                      disabled
-                    />
-                  </label>
+                  <div className={styles.proposedTimesList}>
+                    {appointmentRequestData.proposedTimes.map((time, index) => (
+                      <div key={index} className={styles.proposedTimeItem}>
+                        <label>
+                          <input
+                            type="radio"
+                            name="selectedTime"
+                            checked={appointmentRequestData.selectedTime === time.start}
+                            onChange={() => setAppointmentRequestData(prev => ({
+                              ...prev,
+                              selectedTime: time.start
+                            }))}
+                          />
+                          {new Date(time.start).toLocaleString()} - {new Date(time.end).toLocaleString()}
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setAppointmentRequestData(prev => ({
+                            ...prev,
+                            proposedTimes: prev.proposedTimes.filter((_, i) => i !== index),
+                            selectedTime: prev.selectedTime === time.start ? undefined : prev.selectedTime
+                          }))}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className={styles.addAnother}>
+                    <button type="button" onClick={() => setSelectedSlot(null)}>
+                      Click another available slot to add more times
+                    </button>
+                  </div>
+
                   <label>
                     Message (optional):
                     <textarea
@@ -1004,6 +1147,7 @@ const renderWeekView = ({
                       placeholder="Add a message to the receiver"
                     />
                   </label>
+
                   <div className={styles.popoverButtons}>
                     <button type="submit">Send Request</button>
                     <button type="button" onClick={closePopover}>
