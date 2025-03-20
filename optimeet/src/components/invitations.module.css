@@ -1,55 +1,219 @@
 .container {
-  max-width: 600px;
+  max-width: 800px;
   margin: 0 auto;
-  padding: 1rem;
+  padding: 2rem 1rem;
 }
 
-.invitationForm {
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  padding: 1rem;
+.invitationCard {
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 1.5rem;
   margin-bottom: 1.5rem;
-  background: #fff;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.formGroup {
-  margin-bottom: 1rem;
-}
-
-.formGroup label {
-  font-weight: bold;
-  display: block;
-  margin-bottom: 0.5rem;
-}
-
-.formGroup input,
-.formGroup textarea {
-  width: 100%;
-  padding: 0.5rem;
-  border-radius: 4px;
-  border: 1px solid #ddd;
-  resize: none;
-}
-
-.buttonGroup {
+.cardHeader {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #eee;
 }
 
-.buttonGroup button {
-  flex: 1;
-  margin-right: 0.5rem;
+.cardHeader h3 {
+  margin: 0;
+  color: #2d3748;
+  font-size: 1.25rem;
+}
+
+.status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.status.pending {
+  background: #fff4e5;
+  color: #663c00;
+}
+
+.status.accepted {
+  background: #e6f4ea;
+  color: #137333;
+}
+
+.status.rejected {
+  background: #fce8e6;
+  color: #c5221f;
+}
+
+.cardBody {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.detailItem {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.detailItem label {
+  font-weight: 500;
+  color: #4a5568;
+  font-size: 0.875rem;
+}
+
+.detailItem p {
+  margin: 0;
+  color: #2d3748;
+  line-height: 1.5;
+}
+
+.timeList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.timeList li {
   padding: 0.5rem;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
+  background: #f8f9fa;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: #4a5568;
 }
 
-.buttonGroup button:last-child {
-  margin-right: 0;
+.cardFooter {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #eee;
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.acceptButton {
+  background: #38a169;
+  color: white;
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.acceptButton:hover {
+  background: #2f855d;
+}
+
+.rejectButton {
+  background: #e53e3e;
+  color: white;
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.rejectButton:hover {
+  background: #c53030;
 }
 
 .buttonGroup button:disabled {
-  background: #ccc;
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .container {
+    padding: 1rem;
+  }
+  
+  .invitationCard {
+    padding: 1rem;
+  }
+  
+  .cardHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .cardFooter {
+    flex-direction: column;
+  }
+  
+  .acceptButton,
+  .rejectButton {
+    width: 100%;
+  }
+}
+
+.timeItem {
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.timeRange {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.timeLabel {
+  font-weight: 500;
+  color: #475569;
+  min-width: 50px;
+}
+
+/* Accept/Reject buttons */
+.actionButtons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.acceptButton {
+  background: #10b981;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.rejectButton {
+  background: #ef4444;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.acceptButton:hover {
+  background-color: #059669;
+}
+
+.rejectButton:hover {
+  background-color: #dc2626;
+}
+
+.buttonGroup button:disabled {
+  opacity: 0.7;
   cursor: not-allowed;
 }

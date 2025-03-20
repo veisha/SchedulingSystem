@@ -26,11 +26,6 @@ interface User {
   name: string;
 }
 
-interface ProposedTime {
-  start: string;
-  end: string;
-}
-
 export default function SharedSchedulesPage() {
   const params = useParams();
   const id = params?.id as string;
@@ -90,7 +85,7 @@ export default function SharedSchedulesPage() {
     selectedTime,
     message,
   }: {
-    proposedTimes: ProposedTime[];
+    proposedTimes: Array<{ start: string; end: string }>;
     selectedTime?: string;
     message?: string;
   }) => {
