@@ -107,6 +107,15 @@ const Calendar: React.FC<CalendarProps> = (props) => {
 
   const [userId, setUserId] = useState<string | null>(null);
 
+  const [appointmentRequestData, setAppointmentRequestData] = useState<{
+    proposedTimes: string[];
+    selectedTime?: string;
+    message: string;
+  }>({
+    proposedTimes: [],
+    message: "",
+  });
+  
 
   useEffect(() => {
     const fetchUserId = async () => {
@@ -280,27 +289,35 @@ const Calendar: React.FC<CalendarProps> = (props) => {
           setView,
           isReadOnly, // ✅ Pass it!
           onCreateAppointmentRequest: isReadOnly ? onCreateAppointmentRequest : undefined,
+          appointmentRequestData,
+          setAppointmentRequestData,
+          
         });
-      case "week":
-        return renderWeekView({
-          handleAddSchedule, // ✅ Pass it in
-          currentDate,
-          setCurrentDate,
-          selectedSlot,
-          setSelectedSlot,
-          formData: isReadOnly
-            ? {
-                type: ScheduleType.TASK,
-                title: "",
-                description: "",
-                isAllDay: false,
-                repeat: null,
-              }
-            : formData,
-          setFormData: isReadOnly ? () => {} : setFormData,
-          schedules,
-          setView,
-        });
+      // In the main Calendar component's renderView function
+        case "week":
+          return renderWeekView({
+            handleAddSchedule,
+            currentDate,
+            setCurrentDate,
+            selectedSlot,
+            setSelectedSlot,
+            formData: isReadOnly
+              ? {
+                  type: ScheduleType.TASK,
+                  title: "",
+                  description: "",
+                  isAllDay: false,
+                  repeat: null,
+                }
+              : formData,
+            setFormData: isReadOnly ? () => {} : setFormData,
+            schedules,
+            setView,
+            isReadOnly,
+            onCreateAppointmentRequest: isReadOnly ? onCreateAppointmentRequest : undefined,
+            appointmentRequestData,
+            setAppointmentRequestData,
+            });
       case "month":
         return renderMonthView({
           currentDate,
@@ -342,6 +359,8 @@ const renderDayView = ({
   setView,
   isReadOnly = false, // ✅ Add this param
   onCreateAppointmentRequest, // ✅ Add this too for handling appointment requests
+  appointmentRequestData,            // 👈 Add this
+  setAppointmentRequestData,         // 👈 And this
 }: {
   handleAddSchedule: ({
     formData,
@@ -368,6 +387,19 @@ const renderDayView = ({
     selectedTime?: string;
     message?: string;
   }) => Promise<void>; // ✅ New prop
+   // 👇 Add these two types:
+   appointmentRequestData: {
+    proposedTimes: string[];
+    selectedTime?: string;
+    message: string;
+  };
+  setAppointmentRequestData: React.Dispatch<
+    React.SetStateAction<{
+      proposedTimes: string[];
+      selectedTime?: string;
+      message: string;
+    }>
+  >;
 }) => {
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const currentHour = getCurrentHour();
@@ -378,6 +410,7 @@ const renderDayView = ({
     month: "long",
     day: "numeric",
   });
+
 
   // Filter schedules for the current day
   const schedulesForTheDay = schedules.filter((schedule) => {
@@ -403,33 +436,19 @@ const renderDayView = ({
   const handleEventSlotClick = (hour: number) => {
     const selectedDate = new Date(currentDate);
     selectedDate.setHours(hour, 0, 0, 0);
-  
     const endDate = new Date(selectedDate.getTime());
     endDate.setHours(endDate.getHours() + 1);
   
-    setSelectedSlot({ date: selectedDate, hour, endDate });
-  
-    console.log("✅ Slot Selected", {
-      start: selectedDate,
-      end: endDate,
-    });
-  
-    // ✅ IF READ ONLY MODE
-    if (isReadOnly && onCreateAppointmentRequest) {
-      console.log("✅ READ ONLY MODE");
-      const proposedTime = selectedDate.toISOString(); // Or any other logic for proposing
-      const endTime = endDate.toISOString();
-  
-      // Trigger the appointment request modal or directly the request method
-      onCreateAppointmentRequest({
-        proposedTimes: [proposedTime, endTime],
-        selectedTime: proposedTime,
-        message: "", // You can open another UI to fill this
+    // For read-only mode: initialize appointment data
+    if (isReadOnly) {
+      setAppointmentRequestData({
+        proposedTimes: [selectedDate.toISOString(), endDate.toISOString()],
+        selectedTime: selectedDate.toISOString(),
+        message: ""
       });
-  
-      // Optionally close the selection
-      setSelectedSlot(null);
     }
+  
+    setSelectedSlot({ date: selectedDate, hour, endDate });
   };
   
 
@@ -571,108 +590,165 @@ const renderDayView = ({
 
       {/* Popover Form */}
       {selectedSlot && (
-        <div className={styles.popover}>
-          <div className={styles.popoverContent}>
-            <h3>Add Schedule</h3>
-            <form onSubmit={handleFormSubmit}>
-              <label>
-                Type:
-                <select
-                  name="type"
-                  value={formData.type}
-                  onChange={(e) =>
-                    setFormData({ ...formData, type: e.target.value as ScheduleType })
+  <div className={styles.popover}>
+    <div className={styles.popoverContent}>
+      {isReadOnly ? (
+        // Appointment Request Form
+        <>
+          <h3>Create Appointment Request</h3>
+          <form onSubmit={async (e) => {
+              e.preventDefault();
+              if (onCreateAppointmentRequest) {
+                await onCreateAppointmentRequest({
+                  proposedTimes: [
+                    selectedSlot.date.toISOString(),
+                    selectedSlot.endDate.toISOString()
+                  ],
+                  selectedTime: selectedSlot.date.toISOString(),
+                  message: appointmentRequestData.message // Use the state
+                });
+                setSelectedSlot(null);
+              }
+            }}>
+            <label>
+              Proposed Time Slot:
+              <input
+                type="datetime-local"
+                value={formatDateTimeLocal(selectedSlot.date)}
+                disabled
+              />
+              <span> to </span>
+              <input
+                type="datetime-local"
+                value={formatDateTimeLocal(selectedSlot.endDate)}
+                disabled
+              />
+            </label>
+
+            <label>
+              Message (optional):
+              <textarea
+                value={appointmentRequestData.message}
+                onChange={(e) => setAppointmentRequestData(prev => ({
+                  ...prev,
+                  message: e.target.value
+                }))}
+                placeholder="Add a message to the receiver"
+              />
+            </label>
+
+            <div className={styles.popoverButtons}>
+              <button type="submit">Send Request</button>
+              <button type="button" onClick={closePopover}>
+                Cancel
+              </button>
+            </div>
+          </form>
+        </>
+      ) : (
+        // Existing Schedule Form
+        <>
+          <h3>Add Schedule</h3>
+          <form onSubmit={handleFormSubmit}>
+            <label>
+              Type:
+              <select
+                name="type"
+                value={formData.type}
+                onChange={(e) =>
+                  setFormData({ ...formData, type: e.target.value as ScheduleType })
+                }
+                required
+              >
+                <option value="TASK">Task</option>
+                <option value="APPOINTMENT">Appointment</option>
+                <option value="RESTDAY">Rest Day</option>
+                <option value="BLOCK">Block</option>
+              </select>
+            </label>
+
+            <label>
+              Title:
+              <input
+                type="text"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                required
+              />
+            </label>
+
+            <label>
+              Description:
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              />
+            </label>
+
+            <label>
+              Start Date:
+              <input
+                type="datetime-local"
+                value={formatDateTimeLocal(selectedSlot.date)}
+                disabled
+              />
+            </label>
+
+            <label>
+              End Date:
+              <input
+                type="datetime-local"
+                value={formatDateTimeLocal(selectedSlot.endDate)}
+                onChange={(e) => {
+                  const newEnd = new Date(e.target.value);
+                  if (!isNaN(newEnd.getTime())) {
+                    setSelectedSlot({ ...selectedSlot, endDate: newEnd });
                   }
-                  required
-                >
-                  <option value="TASK">Task</option>
-                  <option value="APPOINTMENT">Appointment</option>
-                  <option value="RESTDAY">Rest Day</option>
-                  <option value="BLOCK">Block</option>
-                </select>
-              </label>
+                }}
+                step="3600"
+              />
+            </label>
 
-              <label>
-                Title:
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  required
-                />
-              </label>
+            <label>
+              All Day:
+              <input
+                type="checkbox"
+                checked={formData.isAllDay}
+                onChange={(e) => setFormData({ ...formData, isAllDay: e.target.checked })}
+              />
+            </label>
 
-              <label>
-                Description:
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                />
-              </label>
+            <label>
+              Repeat:
+              <select
+                value={formData.repeat ? formData.repeat.frequency : "NONE"}
+                onChange={(e) => {
+                  const value = e.target.value as RepeatType["frequency"];
+                  setFormData({
+                    ...formData,
+                    repeat: value !== "NONE" ? { frequency: value } : null,
+                  });
+                }}
+              >
+                <option value="NONE">None</option>
+                <option value="DAILY">Daily</option>
+                <option value="WEEKLY">Weekly</option>
+                <option value="MONTHLY">Monthly</option>
+              </select>
+            </label>
 
-              <label>
-                Start Date:
-                <input
-                  type="datetime-local"
-                  value={formatDateTimeLocal(selectedSlot.date)}
-                  disabled
-                />
-              </label>
-
-              <label>
-                End Date:
-                <input
-                  type="datetime-local"
-                  value={formatDateTimeLocal(selectedSlot.endDate)}
-                  onChange={(e) => {
-                    const newEnd = new Date(e.target.value);
-                    if (!isNaN(newEnd.getTime())) {
-                      setSelectedSlot({ ...selectedSlot, endDate: newEnd });
-                    }
-                  }}
-                  step="3600"
-                />
-              </label>
-
-              <label>
-                All Day:
-                <input
-                  type="checkbox"
-                  checked={formData.isAllDay}
-                  onChange={(e) => setFormData({ ...formData, isAllDay: e.target.checked })}
-                />
-              </label>
-
-              <label>
-                Repeat:
-                <select
-                  value={formData.repeat ? formData.repeat.frequency : "NONE"}
-                  onChange={(e) => {
-                    const value = e.target.value as RepeatType["frequency"];
-                    setFormData({
-                      ...formData,
-                      repeat: value !== "NONE" ? { frequency: value } : null,
-                    });
-                  }}
-                  
-                >
-                  <option value="NONE">None</option>
-                  <option value="DAILY">Daily</option>
-                  <option value="WEEKLY">Weekly</option>
-                  <option value="MONTHLY">Monthly</option>
-                </select>
-              </label>
-
-              <div className={styles.popoverButtons}>
-                <button type="submit">Add Schedule</button>
-                <button type="button" onClick={closePopover}>
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+            <div className={styles.popoverButtons}>
+              <button type="submit">Add Schedule</button>
+              <button type="button" onClick={closePopover}>
+                Cancel
+              </button>
+            </div>
+          </form>
+        </>
       )}
+    </div>
+  </div>
+)}
     </div>
   );
 };
@@ -687,6 +763,10 @@ const renderWeekView = ({
   setFormData,
   schedules,
   setView,
+  isReadOnly = false,
+  onCreateAppointmentRequest,
+  appointmentRequestData,            // 👈 Add this
+  setAppointmentRequestData,         // 👈 And this
 }: {
   handleAddSchedule: ({
     formData,
@@ -705,25 +785,37 @@ const renderWeekView = ({
   setFormData: (data: FormData) => void;
   schedules: Schedule[];
   setView: (view: CalendarView) => void;
+  isReadOnly?: boolean;
+  onCreateAppointmentRequest?: (params: {
+    proposedTimes: string[];
+    selectedTime?: string;
+    message?: string;
+  }) => Promise<void>;
+  // 👇 Add these two types:
+  appointmentRequestData: {
+    proposedTimes: string[];
+    selectedTime?: string;
+    message: string;
+  };
+  setAppointmentRequestData: React.Dispatch<
+    React.SetStateAction<{
+      proposedTimes: string[];
+      selectedTime?: string;
+      message: string;
+    }>
+  >;
 }) => {
   const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const hours = Array.from({ length: 24 }, (_, i) => i);
-
   const startOfWeek = new Date(currentDate);
   startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
-
   const now = new Date();
-  const currentHour = now.getHours();
-  const currentDay = now.getDate();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
 
   const formatDateTimeLocal = (date: Date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
     const hours = String(date.getHours()).padStart(2, "0");
-
     return `${year}-${month}-${day}T${hours}:00`;
   };
 
@@ -731,54 +823,36 @@ const renderWeekView = ({
     const selectedDate = new Date(startOfWeek);
     selectedDate.setDate(startOfWeek.getDate() + dayIndex);
     selectedDate.setHours(hour, 0, 0, 0);
-
     const endDate = new Date(selectedDate);
     endDate.setHours(hour + 1, 0, 0, 0);
 
+    if (isReadOnly) {
+      setAppointmentRequestData({
+        proposedTimes: [selectedDate.toISOString(), endDate.toISOString()],
+        selectedTime: selectedDate.toISOString(),
+        message: ""
+      });
+    }
+
     setSelectedSlot({ date: selectedDate, hour, endDate });
-
-    console.log("✅ Slot selected in week view:", {
-      start: selectedDate,
-      end: endDate,
-    });
   };
 
-  const closePopover = () => {
-    setSelectedSlot(null);
-  };
+  const closePopover = () => setSelectedSlot(null);
 
   const handleEndDateTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newEndDate = new Date(e.target.value);
     newEndDate.setMinutes(0, 0);
-
     if (!selectedSlot) return;
-
-    setSelectedSlot({
-      ...selectedSlot,
-      endDate: newEndDate,
-    });
+    setSelectedSlot({ ...selectedSlot, endDate: newEndDate });
   };
 
   const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
-    // ✅ Validation
     if (!selectedSlot) {
       alert("❗ Please select a time slot.");
       return;
     }
-
-    if (selectedSlot.endDate <= selectedSlot.date) {
-      alert("❗ End date must be after start date.");
-      return;
-    }
-
-    // ✅ Call the provided handleAddSchedule function
-    await handleAddSchedule({
-      formData,
-      selectedSlot,
-      closePopover,
-    });
+    await handleAddSchedule({ formData, selectedSlot, closePopover });
   };
 
   const isPastTimeSlot = (dayIndex: number, hour: number) => {
@@ -792,12 +866,10 @@ const renderWeekView = ({
     const slotDate = new Date(startOfWeek);
     slotDate.setDate(startOfWeek.getDate() + dayIndex);
     slotDate.setHours(hour, 0, 0, 0);
-
-    return schedules.some((schedule) => {
-      const startDateTime = new Date(schedule.startDateTime);
-      const endDateTime = new Date(schedule.endDateTime);
-
-      return slotDate >= startDateTime && slotDate < endDateTime;
+    return schedules.some(schedule => {
+      const start = new Date(schedule.startDateTime);
+      const end = new Date(schedule.endDateTime);
+      return slotDate >= start && slotDate < end;
     });
   };
 
@@ -815,10 +887,10 @@ const renderWeekView = ({
         </div>
 
         <h2>
-          {startOfWeek.toLocaleString("default", { month: "short", day: "numeric" })} -{" "}
-          {new Date(startOfWeek.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleString("default", {
-            month: "short",
-            day: "numeric",
+          {startOfWeek.toLocaleDateString("default", { month: "short", day: "numeric" })} - {" "}
+          {new Date(startOfWeek.getTime() + 6 * 86400000).toLocaleDateString("default", { 
+            month: "short", 
+            day: "numeric" 
           })}
         </h2>
 
@@ -842,11 +914,10 @@ const renderWeekView = ({
         {daysOfWeek.map((day, index) => {
           const dayDate = new Date(startOfWeek);
           dayDate.setDate(startOfWeek.getDate() + index);
-
           return (
             <div key={index} className={styles.dayHeader}>
               <div>{day}</div>
-              <div>{dayDate.toLocaleString("default", { month: "short", day: "numeric" })}</div>
+              <div>{dayDate.toLocaleDateString("default", { month: "short", day: "numeric" })}</div>
             </div>
           );
         })}
@@ -856,56 +927,36 @@ const renderWeekView = ({
         <div className={styles.timeColumn}>
           {hours.map((hour) => (
             <div key={hour} className={styles.timeSlot}>
-              {new Date(0, 0, 0, hour).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
+              {new Date(0, 0, 0, hour).toLocaleTimeString([], { 
+                hour: "2-digit", 
+                minute: "2-digit" 
               })}
             </div>
           ))}
         </div>
 
         <div className={styles.daysColumns}>
-          {daysOfWeek.map((_, dayIndex) => {
-            const dayDate = new Date(startOfWeek);
-            dayDate.setDate(startOfWeek.getDate() + dayIndex);
-
-            const isCurrentDay =
-              dayDate.getDate() === currentDay &&
-              dayDate.getMonth() === currentMonth &&
-              dayDate.getFullYear() === currentYear;
-
-            return (
-              <div key={dayIndex} className={styles.dayColumn}>
-                {hours.map((hour) => {
-                  const isCurrentTime = isCurrentDay && hour === currentHour;
-                  const isPast = isPastTimeSlot(dayIndex, hour);
-                  const isOccupied = isOccupiedTimeSlot(dayIndex, hour);
-
-                  return (
-                    <div
-                      key={hour}
-                      className={`
-                        ${styles.eventSlot}
-                        ${isCurrentTime ? styles.currentTime : ""}
-                        ${isOccupied ? styles.occupiedSlot : ""}
-                        ${isPast ? styles.pastSlot : ""}
-                      `}
-                      onClick={
-                        !isPast && !isOccupied
-                          ? () => handleEventSlotClick(dayIndex, hour)
-                          : undefined
-                      }
-                      style={{
-                        cursor: isPast || isOccupied ? "not-allowed" : "pointer",
-                      }}
-                    >
-                      {isOccupied && <span className={styles.eventLabel}>Scheduled</span>}
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })}
+          {daysOfWeek.map((_, dayIndex) => (
+            <div key={dayIndex} className={styles.dayColumn}>
+              {hours.map((hour) => {
+                const isPast = isPastTimeSlot(dayIndex, hour);
+                const isOccupied = isOccupiedTimeSlot(dayIndex, hour);
+                
+                return (
+                  <div
+                    key={hour}
+                    className={`${styles.eventSlot} ${
+                      isOccupied ? styles.occupiedSlot : ""
+                    } ${isPast ? styles.pastSlot : ""}`}
+                    onClick={!isPast && !isOccupied ? () => handleEventSlotClick(dayIndex, hour) : undefined}
+                    style={{ cursor: isPast || isOccupied ? "not-allowed" : "pointer" }}
+                  >
+                    {isOccupied && <span className={styles.eventLabel}>Scheduled</span>}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
         </div>
       </div>
 
@@ -913,96 +964,139 @@ const renderWeekView = ({
       {selectedSlot && (
         <div className={styles.popover}>
           <div className={styles.popoverContent}>
-            <h3>Add Schedule</h3>
-            <form onSubmit={handleFormSubmit}>
-              <label>
-                Type:
-                <select
-                  name="type"
-                  value={formData.type}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value as ScheduleType })}
-                  required
-                >
-                  <option value="TASK">Task</option>
-                  <option value="APPOINTMENT">Appointment</option>
-                  <option value="RESTDAY">Rest Day</option>
-                  <option value="BLOCK">Block</option>
-                </select>
-              </label>
-
-              <label>
-                Title:
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  required
-                />
-              </label>
-
-              <label>
-                Description:
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                />
-              </label>
-
-              <label>
-                Start Date:
-                <input
-                  type="datetime-local"
-                  value={formatDateTimeLocal(selectedSlot.date)}
-                  disabled
-                />
-              </label>
-
-              <label>
-                End Date:
-                <input
-                  type="datetime-local"
-                  value={formatDateTimeLocal(selectedSlot.endDate)}
-                  onChange={handleEndDateTimeChange}
-                  step="3600"
-                />
-              </label>
-
-              <label>
-                All Day:
-                <input
-                  type="checkbox"
-                  checked={formData.isAllDay}
-                  onChange={(e) => setFormData({ ...formData, isAllDay: e.target.checked })}
-                />
-              </label>
-
-              <label>
-                Repeat:
-                <select
-                  value={formData.repeat ? formData.repeat.frequency : "NONE"}
-                  onChange={(e) => {
-                    const value = e.target.value as RepeatType["frequency"];
-                    setFormData({
-                      ...formData,
-                      repeat: value !== "NONE" ? { frequency: value } : null,
+            {isReadOnly ? (
+              // Appointment Request Form
+              <>
+                <h3>Create Appointment Request</h3>
+                <form onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (onCreateAppointmentRequest) {
+                    await onCreateAppointmentRequest({
+                      proposedTimes: appointmentRequestData.proposedTimes,
+                      selectedTime: appointmentRequestData.selectedTime,
+                      message: appointmentRequestData.message
                     });
-                  }}
-                  
-                >
-                  <option value="NONE">None</option>
-                  <option value="DAILY">Daily</option>
-                  <option value="WEEKLY">Weekly</option>
-                  <option value="MONTHLY">Monthly</option>
-                </select>
-              </label>
-
-              <div className={styles.popoverButtons}>
-                <button type="submit">Add Schedule</button>
-                <button type="button" onClick={closePopover}>
-                  Cancel
-                </button>
-              </div>
-            </form>
+                    setSelectedSlot(null);
+                  }
+                }}>
+                  <label>
+                    Proposed Time Slot:
+                    <input
+                      type="datetime-local"
+                      value={formatDateTimeLocal(selectedSlot.date)}
+                      disabled
+                    />
+                    <span> to </span>
+                    <input
+                      type="datetime-local"
+                      value={formatDateTimeLocal(selectedSlot.endDate)}
+                      disabled
+                    />
+                  </label>
+                  <label>
+                    Message (optional):
+                    <textarea
+                      value={appointmentRequestData.message}
+                      onChange={(e) => setAppointmentRequestData(prev => ({
+                        ...prev,
+                        message: e.target.value
+                      }))}
+                      placeholder="Add a message to the receiver"
+                    />
+                  </label>
+                  <div className={styles.popoverButtons}>
+                    <button type="submit">Send Request</button>
+                    <button type="button" onClick={closePopover}>
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </>
+            ) : (
+              // Schedule Form
+              <>
+                <h3>Add Schedule</h3>
+                <form onSubmit={handleFormSubmit}>
+                  <label>
+                    Type:
+                    <select
+                      value={formData.type}
+                      onChange={(e) => setFormData({ ...formData, type: e.target.value as ScheduleType })}
+                      required
+                    >
+                      {Object.values(ScheduleType).map((type) => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Title:
+                    <input
+                      type="text"
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      required
+                    />
+                  </label>
+                  <label>
+                    Description:
+                    <textarea
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    />
+                  </label>
+                  <label>
+                    Start Date:
+                    <input
+                      type="datetime-local"
+                      value={formatDateTimeLocal(selectedSlot.date)}
+                      disabled
+                    />
+                  </label>
+                  <label>
+                    End Date:
+                    <input
+                      type="datetime-local"
+                      value={formatDateTimeLocal(selectedSlot.endDate)}
+                      onChange={handleEndDateTimeChange}
+                      step="3600"
+                    />
+                  </label>
+                  <label>
+                    All Day:
+                    <input
+                      type="checkbox"
+                      checked={formData.isAllDay}
+                      onChange={(e) => setFormData({ ...formData, isAllDay: e.target.checked })}
+                    />
+                  </label>
+                  <label>
+                    Repeat:
+                    <select
+                      value={formData.repeat?.frequency || "NONE"}
+                      onChange={(e) => {
+                        const value = e.target.value as RepeatType["frequency"];
+                        setFormData({
+                          ...formData,
+                          repeat: value !== "NONE" ? { frequency: value } : null,
+                        });
+                      }}
+                    >
+                      <option value="NONE">None</option>
+                      <option value="DAILY">Daily</option>
+                      <option value="WEEKLY">Weekly</option>
+                      <option value="MONTHLY">Monthly</option>
+                    </select>
+                  </label>
+                  <div className={styles.popoverButtons}>
+                    <button type="submit">Add Schedule</button>
+                    <button type="button" onClick={closePopover}>
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
           </div>
         </div>
       )}
