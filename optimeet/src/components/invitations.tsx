@@ -9,7 +9,7 @@ interface AppointmentRequest {
   id: string;
   senderId: string;
   receiverId: string;
-  proposedTimes: string[];
+  proposedTimes: string[][];
   selectedTime: string | null;
   status: string;
   message: string;
@@ -20,20 +20,18 @@ interface AppointmentRequest {
 export default function Invitations() {
   const [appointments, setAppointments] = useState<AppointmentRequest[]>([]);
   const [senderEmails, setSenderEmails] = useState<{ [key: string]: string }>({});
+  const [selectedTimes, setSelectedTimes] = useState<{ [key: string]: string }>({});
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
-        console.log('Starting to fetch appointments...');
-        
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
           console.error('No authenticated user found');
           return;
         }
 
-        console.log('Fetching appointments for user ID:', user.id);
-        
         const { data, error } = await supabase
           .from('AppointmentRequest')
           .select('*')
@@ -44,27 +42,18 @@ export default function Invitations() {
           return;
         }
 
-        console.log('Raw appointment data from database:', data);
-        
         setAppointments(data || []);
-        console.log('Appointments state updated:', data || []);
 
-        // Fetch sender emails
         const emailsMap: { [key: string]: string } = {};
         for (const appointment of data || []) {
           if (!emailsMap[appointment.senderId]) {
-            console.log(`Fetching email for sender ID: ${appointment.senderId}`);
             const email = await getUserById(appointment.senderId);
             if (email) {
               emailsMap[appointment.senderId] = email;
-              console.log(`Found email for ${appointment.senderId}: ${email}`);
-            } else {
-              console.warn(`No email found for sender ID: ${appointment.senderId}`);
             }
           }
         }
-        
-        console.log('Completed email mapping:', emailsMap);
+
         setSenderEmails(emailsMap);
 
       } catch (error) {
@@ -75,56 +64,88 @@ export default function Invitations() {
     fetchAppointments();
   }, []);
 
-  const handleAccept = async (id: string) => {
-    try {
-      console.log('Attempting to accept appointment ID:', id);
-      
-      const { error } = await supabase
-        .from('AppointmentRequest')
-        .update({ status: 'accepted' })
-        .eq('id', id);
-
-      if (error) {
-        console.error('Accept error:', error);
-        return;
-      }
-
-      console.log('Successfully accepted appointment ID:', id);
-      
-      setAppointments(prev =>
-        prev.map(appt =>
-          appt.id === id ? { ...appt, status: 'accepted' } : appt
-        )
-      );
-    } catch (error) {
-      console.error('Error in handleAccept:', error);
-    }
+  const handleTimeSelect = (appointmentId: string, selectedTime: string) => {
+    setSelectedTimes(prev => ({
+      ...prev,
+      [appointmentId]: selectedTime
+    }));
   };
 
-  const handleReject = async (id: string) => {
+  const handleAccept = async (appointmentId: string) => {
+    const selectedTime = selectedTimes[appointmentId];
+
+    if (!selectedTime) {
+      alert('Please select a time before accepting!');
+      return;
+    }
+
+    setLoading(true);
+
     try {
-      console.log('Attempting to reject appointment ID:', id);
-      
       const { error } = await supabase
         .from('AppointmentRequest')
-        .update({ status: 'rejected' })
-        .eq('id', id);
+        .update({
+          selectedTime,
+          status: 'accepted'
+        })
+        .eq('id', appointmentId);
 
       if (error) {
-        console.error('Reject error:', error);
+        console.error('Error accepting invitation:', error);
+        alert('Failed to accept invitation.');
         return;
       }
 
-      console.log('Successfully rejected appointment ID:', id);
-      
       setAppointments(prev =>
-        prev.map(appt =>
-          appt.id === id ? { ...appt, status: 'rejected' } : appt
+        prev.map(app =>
+          app.id === appointmentId
+            ? { ...app, status: 'accepted', selectedTime }
+            : app
         )
       );
-    } catch (error) {
-      console.error('Error in handleReject:', error);
+      alert('Invitation accepted!');
+    } catch (err) {
+      console.error('Accept error:', err);
+      alert('An error occurred while accepting.');
     }
+
+    setLoading(false);
+  };
+
+  const handleReject = async (appointmentId: string) => {
+    const confirmReject = confirm('Are you sure you want to reject this invitation?');
+    if (!confirmReject) return;
+
+    setLoading(true);
+
+    try {
+      const { error } = await supabase
+        .from('AppointmentRequest')
+        .update({
+          status: 'rejected'
+        })
+        .eq('id', appointmentId);
+
+      if (error) {
+        console.error('Error rejecting invitation:', error);
+        alert('Failed to reject invitation.');
+        return;
+      }
+
+      setAppointments(prev =>
+        prev.map(app =>
+          app.id === appointmentId
+            ? { ...app, status: 'rejected' }
+            : app
+        )
+      );
+      alert('Invitation rejected!');
+    } catch (err) {
+      console.error('Reject error:', err);
+      alert('An error occurred while rejecting.');
+    }
+
+    setLoading(false);
   };
 
   return (
@@ -141,7 +162,7 @@ export default function Invitations() {
                 {appointment.status}
               </span>
             </div>
-            
+
             <div className={styles.cardBody}>
               <div className={styles.detailItem}>
                 <label>From:</label>
@@ -156,22 +177,38 @@ export default function Invitations() {
               <div className={styles.detailItem}>
                 <label>Proposed Times:</label>
                 <ul className={styles.timeList}>
-                  {appointment.proposedTimes.map((time, index) => (
-                    <li key={index}>
-                      {new Date(time).toLocaleString([], {
-                        weekday: 'short',
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </li>
-                  ))}
+                  {appointment.proposedTimes.map((timeRange, index) => {
+                    const [startTime, endTime] = timeRange;
+
+                    const start = new Date(startTime);
+                    const end = new Date(endTime);
+
+                    const formattedRange = `${start.toLocaleDateString()} ${start.toLocaleTimeString([], {
+                      hour: '2-digit', minute: '2-digit'
+                    })} - ${end.toLocaleTimeString([], {
+                      hour: '2-digit', minute: '2-digit'
+                    })}`;
+
+                    return (
+                      <li key={index} className={styles.timeOption}>
+                        <label>
+                          <input
+                            type="radio"
+                            name={`selectTime-${appointment.id}`}
+                            value={startTime}
+                            checked={selectedTimes[appointment.id] === startTime}
+                            onChange={() => handleTimeSelect(appointment.id, startTime)}
+                            disabled={appointment.status !== 'pending'}
+                          />
+                          {formattedRange}
+                        </label>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
 
-              {appointment.selectedTime && (
+              {appointment.selectedTime && appointment.status !== 'pending' && (
                 <div className={styles.detailItem}>
                   <label>Selected Time:</label>
                   <p>
@@ -186,26 +223,26 @@ export default function Invitations() {
                   </p>
                 </div>
               )}
-            </div>
 
-            <div className={styles.cardFooter}>
-              {appointment.status === 'pending' && (
-                <>
+              {appointment.status === 'PENDING' && (
+                <div className={styles.buttonGroup}>
                   <button
                     type="button"
-                    onClick={() => handleAccept(appointment.id)}
                     className={styles.acceptButton}
+                    onClick={() => handleAccept(appointment.id)}
+                    disabled={loading}
                   >
                     Accept
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleReject(appointment.id)}
                     className={styles.rejectButton}
+                    onClick={() => handleReject(appointment.id)}
+                    disabled={loading}
                   >
                     Reject
                   </button>
-                </>
+                </div>
               )}
             </div>
           </div>

@@ -82,9 +82,9 @@
 }
 
 .timeList li {
-  padding: 0.5rem;
-  background: #f8f9fa;
-  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
   font-size: 0.875rem;
   color: #4a5568;
 }
@@ -94,119 +94,31 @@
   padding-top: 1.5rem;
   border-top: 1px solid #eee;
   display: flex;
-  gap: 1rem;
   justify-content: flex-end;
-}
-
-.acceptButton {
-  background: #38a169;
-  color: white;
-  padding: 0.5rem 1.25rem;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.acceptButton:hover {
-  background: #2f855d;
-}
-
-.rejectButton {
-  background: #e53e3e;
-  color: white;
-  padding: 0.5rem 1.25rem;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.rejectButton:hover {
-  background: #c53030;
-}
-
-.buttonGroup button:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-/* Responsive adjustments */
-@media (max-width: 640px) {
-  .container {
-    padding: 1rem;
-  }
-  
-  .invitationCard {
-    padding: 1rem;
-  }
-  
-  .cardHeader {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-  
-  .cardFooter {
-    flex-direction: column;
-  }
-  
-  .acceptButton,
-  .rejectButton {
-    width: 100%;
-  }
-}
-
-.timeItem {
-  padding: 1rem;
-  margin-bottom: 0.75rem;
-  background: #f8fafc;
-  border-radius: 8px;
-  display: grid;
-  gap: 0.5rem;
-}
-
-.timeRange {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.timeLabel {
-  font-weight: 500;
-  color: #475569;
-  min-width: 50px;
-}
-
-/* Accept/Reject buttons */
-.actionButtons {
-  display: flex;
   gap: 1rem;
-  margin-top: 1.5rem;
+}
+
+.acceptButton,
+.rejectButton {
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  border: none;
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
 }
 
 .acceptButton {
-  background: #10b981;
-  color: white;
-  padding: 0.75rem 1.5rem;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.rejectButton {
-  background: #ef4444;
-  color: white;
-  padding: 0.75rem 1.5rem;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.2s;
+  background-color: #10b981;
 }
 
 .acceptButton:hover {
   background-color: #059669;
+}
+
+.rejectButton {
+  background-color: #ef4444;
 }
 
 .rejectButton:hover {
@@ -216,4 +128,55 @@
 .buttonGroup button:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .invitationCard {
+    padding: 1rem;
+  }
+
+  .cardHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .cardFooter {
+    flex-direction: column;
+  }
+
+  .acceptButton,
+  .rejectButton {
+    width: 100%;
+  }
+}
+
+
+.buttonGroup {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.acceptButton {
+  background-color: #4caf50;
+  color: white;
+  padding: 0.5rem 1rem;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.rejectButton {
+  background-color: #f44336;
+  color: white;
+  padding: 0.5rem 1rem;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
 }
