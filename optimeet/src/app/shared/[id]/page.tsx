@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Calendar from "@/components/calendar";
 import styles from "./SharedSchedules.module.css";
-import EscaladeLoader from "@/components/EscaladeLoader"; // Adjust the path as needed
+import EscaladeLoader from "@/components/EscaladeLoader";
+import { supabase } from "@/lib/supabase"; // ✅ Supabase Client
 
 interface Schedule {
   id: string;
@@ -27,72 +28,133 @@ interface User {
 
 export default function SharedSchedulesPage() {
   const params = useParams();
-  const id = params?.id as string;
+  const id = params?.id as string; // receiverId from URL param
 
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-
   const [calendarView, setCalendarView] = useState<"day" | "week" | "month" | "year">("month");
 
-  // ✅ User data state
   const [user, setUser] = useState<User | null>(null);
+  const [senderId, setSenderId] = useState<string | null>(null);
 
+  // ✅ Get authenticated user for senderId
+  useEffect(() => {
+    const fetchSenderId = async () => {
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
+
+      if (error) {
+        console.error("❗Error fetching authenticated user:", error.message);
+        return;
+      }
+
+      console.log("✅ Authenticated user:", user);
+      setSenderId(user?.id || null);
+    };
+
+    fetchSenderId();
+  }, []);
+
+  // ✅ Fetch shared schedules and user info
   useEffect(() => {
     const fetchSharedSchedules = async () => {
       try {
-        console.log("🔎 Fetching schedules and user info by userId...");
-        console.log("➡️ userId from URL:", id);
-    
+        console.log("🔎 Fetching schedules & user info for userId:", id);
+
         if (!id) {
-          console.warn("⚠️ No ID provided in URL params.");
+          console.warn("⚠️ No ID found in URL params.");
           setError("Invalid user ID.");
           return;
         }
-    
-        // 🔥 1. Fetch schedules by userId
+
+        // ✅ 1. Get schedules by userId
         const response = await fetch(`/api/schedules-by-user-id?userId=${id}`);
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.error || "Failed to fetch schedules");
+          throw new Error(errorData.error || "Failed to fetch schedules.");
         }
-    
+
         let { schedules }: { schedules: Schedule[] } = await response.json();
-        console.log("✅ Schedules fetched (raw):", schedules);
-    
-        // ✅ Convert to local time
+        console.log("✅ Raw schedules fetched:", schedules);
+
         schedules = schedules.map((schedule) => ({
           ...schedule,
           startDateTime: new Date(schedule.startDateTime + "Z"),
           endDateTime: new Date(schedule.endDateTime + "Z"),
         }));
-    
-        console.log("✅ Schedules after converting to local Date objects:", schedules);
-    
+
+        console.log("✅ Processed schedules:", schedules);
         setSchedules(schedules);
-    
-        // 🔥 2. Fetch user info by userId
+
+        // ✅ 2. Get user info by userId
         const userResponse = await fetch(`/api/user-info?userId=${id}`);
         if (!userResponse.ok) {
           const userError = await userResponse.json();
-          throw new Error(userError.error || "Failed to fetch user info");
+          throw new Error(userError.error || "Failed to fetch user info.");
         }
-    
+
         const { user }: { user: User } = await userResponse.json();
         console.log("✅ User info fetched:", user);
-    
+
         setUser(user);
       } catch (error) {
         console.error("❗Fetch error:", error);
-        setError(error instanceof Error ? error.message : "An unknown error occurred");
+        setError(error instanceof Error ? error.message : "An unknown error occurred.");
       } finally {
         setLoading(false);
       }
     };
-    
 
-    fetchSharedSchedules(); // Removed the setTimeout and called directly
+    fetchSharedSchedules();
   }, [id]);
+
+  // ✅ Handle appointment request creation
+  const handleCreateAppointmentRequest = async ({
+    proposedTimes,
+    selectedTime,
+    message,
+  }: {
+    proposedTimes: string[];
+    selectedTime?: string;
+    message?: string;
+  }) => {
+    if (!senderId) {
+      console.error("❗No authenticated user found. Cannot create request.");
+      return;
+    }
+  
+    // ✅ Get the user's JWT from Supabase
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      console.error("❗No active session found.");
+      return;
+    }
+  
+    try {
+      const response = await fetch("/api/appointment-requests/create", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          // ✅ Include the JWT in the Authorization header
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          senderId,
+          receiverId: id,
+          proposedTimes,
+          selectedTime: selectedTime || null,
+          message: message || "",
+        }),
+      });
+  
+      // ... rest of the code ...
+    } catch (error) {
+      console.error("❗Error creating appointment request:", error);
+    }
+  };
 
   if (loading) {
     return (
@@ -113,7 +175,6 @@ export default function SharedSchedulesPage() {
 
   return (
     <div className={styles.container}>
-      {/* ✅ User Info Section */}
       {user && (
         <div className={styles.userInfo}>
           <h2>Shared by: {user.name}</h2>
@@ -121,15 +182,14 @@ export default function SharedSchedulesPage() {
         </div>
       )}
 
-      {/* ✅ Calendar Component */}
       <Calendar
         schedules={schedules}
         updateDateTime={() => {}}
         view={calendarView}
         setView={setCalendarView}
-        isReadOnly={true} // ✅ Only read-only props required
+        isReadOnly={true}
+        onCreateAppointmentRequest={handleCreateAppointmentRequest}
       />
-
     </div>
   );
 }

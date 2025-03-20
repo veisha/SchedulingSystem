@@ -51,6 +51,17 @@ interface ReadOnlyCalendarProps extends BaseCalendarProps {
   isReadOnly: true;
   setSchedules?: never;
   fetchSchedules?: never;
+  
+  // ✅ Add this for appointment requests
+  onCreateAppointmentRequest?: ({
+    proposedTimes,
+    selectedTime,
+    message,
+  }: {
+    proposedTimes: string[];
+    selectedTime?: string;
+    message?: string;
+  }) => Promise<void>;
 }
 
 interface EditableCalendarProps extends BaseCalendarProps {
@@ -62,14 +73,26 @@ interface EditableCalendarProps extends BaseCalendarProps {
 type CalendarProps = ReadOnlyCalendarProps | EditableCalendarProps;
 
 
-const Calendar: React.FC<CalendarProps> = ({
-  schedules,
-  fetchSchedules,
-  updateDateTime,
-  view,
-  setView,
-  isReadOnly = false,
-}) => {
+function isReadOnlyProps(props: CalendarProps): props is ReadOnlyCalendarProps {
+  return props.isReadOnly === true;
+}
+
+const Calendar: React.FC<CalendarProps> = (props) => {
+  const {
+    schedules,
+    fetchSchedules,
+    updateDateTime,
+    view,
+    setView,
+    isReadOnly = false,
+  } = props;
+
+  let onCreateAppointmentRequest: ReadOnlyCalendarProps["onCreateAppointmentRequest"] | undefined;
+
+  if (isReadOnlyProps(props)) {
+    onCreateAppointmentRequest = props.onCreateAppointmentRequest;
+  }
+  
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [, setDays] = useState<Date[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<{ date: Date; hour: number; endDate: Date } | null>(null);
@@ -244,25 +267,19 @@ const Calendar: React.FC<CalendarProps> = ({
     switch (view) {
       case "day":
         return renderDayView({
-          handleAddSchedule, // ✅ Pass it in
+          handleAddSchedule,
           currentDate,
           selectedSlot,
           setSelectedSlot,
-          formData: isReadOnly
-            ? {
-                type: ScheduleType.TASK,
-                title: "",
-                description: "",
-                isAllDay: false,
-                repeat: null,
-              }
-            : formData,
-          setFormData: isReadOnly ? () => {} : setFormData,
+          formData,
+          setFormData,
           goToPreviousDay,
           goToNextDay,
           getCurrentHour,
           schedules,
           setView,
+          isReadOnly, // ✅ Pass it!
+          onCreateAppointmentRequest: isReadOnly ? onCreateAppointmentRequest : undefined,
         });
       case "week":
         return renderWeekView({
@@ -323,6 +340,8 @@ const renderDayView = ({
   getCurrentHour,
   schedules,
   setView,
+  isReadOnly = false, // ✅ Add this param
+  onCreateAppointmentRequest, // ✅ Add this too for handling appointment requests
 }: {
   handleAddSchedule: ({
     formData,
@@ -343,6 +362,12 @@ const renderDayView = ({
   getCurrentHour: () => number;
   schedules: Schedule[];
   setView: (view: CalendarView) => void;
+  isReadOnly?: boolean; // ✅ New prop
+  onCreateAppointmentRequest?: (params: {
+    proposedTimes: string[];
+    selectedTime?: string;
+    message?: string;
+  }) => Promise<void>; // ✅ New prop
 }) => {
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const currentHour = getCurrentHour();
@@ -378,16 +403,35 @@ const renderDayView = ({
   const handleEventSlotClick = (hour: number) => {
     const selectedDate = new Date(currentDate);
     selectedDate.setHours(hour, 0, 0, 0);
-
+  
     const endDate = new Date(selectedDate.getTime());
     endDate.setHours(endDate.getHours() + 1);
-
+  
     setSelectedSlot({ date: selectedDate, hour, endDate });
+  
     console.log("✅ Slot Selected", {
       start: selectedDate,
       end: endDate,
     });
+  
+    // ✅ IF READ ONLY MODE
+    if (isReadOnly && onCreateAppointmentRequest) {
+      console.log("✅ READ ONLY MODE");
+      const proposedTime = selectedDate.toISOString(); // Or any other logic for proposing
+      const endTime = endDate.toISOString();
+  
+      // Trigger the appointment request modal or directly the request method
+      onCreateAppointmentRequest({
+        proposedTimes: [proposedTime, endTime],
+        selectedTime: proposedTime,
+        message: "", // You can open another UI to fill this
+      });
+  
+      // Optionally close the selection
+      setSelectedSlot(null);
+    }
   };
+  
 
   const closePopover = () => {
     setSelectedSlot(null);
