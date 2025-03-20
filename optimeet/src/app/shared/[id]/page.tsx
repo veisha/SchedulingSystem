@@ -149,7 +149,7 @@ export default function SharedSchedulesPage() {
           message: message || "",
         }),
       });
-  
+      console.log(response);
       // ... rest of the code ...
     } catch (error) {
       console.error("❗Error creating appointment request:", error);
