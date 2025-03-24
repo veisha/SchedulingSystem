@@ -9,6 +9,7 @@ import MySchedules from "@/components/mySchedules";
 import Invitations from "@/components/invitations";
 import Settings from "@/components/settings";
 import styles from "./Dashboard.module.css";
+import Image from "next/image"; // ✅ Import Image component
 
 // Define Schedule interface (adjust if you have this globally)
 interface Schedule {
@@ -112,7 +113,7 @@ export default function Dashboard() {
     if (sidebar && header && button) {
       const headerHeight = header.offsetHeight;
 
-      button.style.left = !sidebarVisible ? "0" : `${-10}px`;
+      button.style.left = !sidebarVisible ? "0" : `${-15}px`;
       button.style.top = `${headerHeight / 2}px`;
     }
   }, [sidebarVisible]);
@@ -182,10 +183,13 @@ export default function Dashboard() {
       {/* Header */}
       <div ref={headerRef} className={styles.header}>
         <div>{formatHeaderDisplay()}</div>
-        <button ref={buttonRef} onClick={handleToggleSidebar}>
-          =
+
+        {/* ✅ Use direct public path for the image */}
+        <button ref={buttonRef} onClick={handleToggleSidebar} className={styles.navButton}>
+          <Image src="/nav_btn.png" alt="Toggle Sidebar" width={40} height={40} />
         </button>
       </div>
+
 
       {/* Sidebar */}
       {sidebarVisible && (
