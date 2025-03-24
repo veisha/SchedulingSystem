@@ -180,3 +180,82 @@
   cursor: pointer;
   border-radius: 4px;
 }
+
+/*
+Popover
+*/
+
+.popover {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.4); /* Dim the background */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000; /* Make sure it's on top */
+}
+
+.popoverContent {
+  background-color: #ffffff;
+  padding: 2rem;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.popoverContent h3 {
+  margin-top: 0;
+  font-size: 1.5rem;
+  color: #2d3748;
+}
+
+.popoverContent form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.popoverContent label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.9rem;
+  color: #4a5568;
+}
+
+.popoverContent input,
+.popoverContent textarea,
+.popoverContent select {
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  font-size: 0.9rem;
+}
+
+.popoverButtons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.popoverButtons button {
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.popoverButtons button[type="submit"] {
+  background-color: #4caf50;
+  color: white;
+}
+
+.popoverButtons button[type="button"] {
+  background-color: #e2e8f0;
+  color: #4a5568;
+}

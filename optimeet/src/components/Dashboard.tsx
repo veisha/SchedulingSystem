@@ -269,7 +269,11 @@ export default function Dashboard() {
         />
         )}
         {currentContent === "mySchedules" && <MySchedules />}
-        {currentContent === "invitations" && <Invitations />}
+        {currentContent === "invitations" && 
+        <Invitations 
+        fetchSchedules={fetchSchedules} 
+        schedules={schedules}
+        />}
         {currentContent === "profile" && <div>Profile Content</div>}
         {currentContent === "settings" && <Settings />}
       </div>
