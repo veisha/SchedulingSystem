@@ -151,7 +151,7 @@ export default function SharedSchedulesPage() {
     <div className={styles.container}>
       {user && (
         <div className={styles.userInfo}>
-          <h2>Shared by: {user.name}</h2>
+          <h2>{user.name}'s Schedule</h2>
           <p>Email: {user.email}</p>
         </div>
       )}
