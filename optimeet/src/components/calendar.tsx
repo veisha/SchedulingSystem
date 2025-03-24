@@ -102,6 +102,7 @@ const Calendar: React.FC<CalendarProps> = (props) => {
   });
 
   const [userId, setUserId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   type AppointmentRequestData = {
     proposedTimes: Array<{ start: string; end: string }>;
@@ -294,6 +295,8 @@ const Calendar: React.FC<CalendarProps> = (props) => {
           onCreateAppointmentRequest: isReadOnly ? onCreateAppointmentRequest : undefined,
           appointmentRequestData,
           setAppointmentRequestData,
+          isSubmitting,
+          setIsSubmitting,
           
         });
       // In the main Calendar component's renderView function
@@ -320,6 +323,8 @@ const Calendar: React.FC<CalendarProps> = (props) => {
             onCreateAppointmentRequest: isReadOnly ? onCreateAppointmentRequest : undefined,
             appointmentRequestData,
             setAppointmentRequestData,
+            isSubmitting,                // ✅ Added
+            setIsSubmitting,             // ✅ Added
             });
       case "month":
         return renderMonthView({
@@ -364,6 +369,8 @@ const renderDayView = ({
   onCreateAppointmentRequest, // ✅ Add this too for handling appointment requests
   appointmentRequestData,            // 👈 Add this
   setAppointmentRequestData,         // 👈 And this
+  isSubmitting,
+  setIsSubmitting,
 }: {
   handleAddSchedule: ({
     formData,
@@ -407,6 +414,9 @@ const renderDayView = ({
     selectedTime?: string;
     message?: string;
   }) => Promise<void>;
+    // ✅ NEW STATE TYPES HERE
+    isSubmitting: boolean;
+    setIsSubmitting: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const currentHour = getCurrentHour();
@@ -514,28 +524,44 @@ const renderDayView = ({
       newEnd: ""
     });
   };
+
   const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
+  
+    if (isSubmitting) return; // prevent duplicate submits!
+  
     // ✅ Validation
     if (!selectedSlot) {
       alert("❗ Please select a time slot.");
       return;
     }
-
+  
     if (isNaN(selectedSlot.date.getTime()) || isNaN(selectedSlot.endDate.getTime())) {
       alert("❗ Invalid date/time selected.");
       console.error("❗ Invalid selectedSlot:", selectedSlot);
       return;
     }
-
-    // ✅ Call the actual add schedule handler
-    await handleAddSchedule({
-      formData,
-      selectedSlot,
-      closePopover,
-    });
+  
+    try {
+      // ✅ Disable the submit button (and prevent double submits)
+      setIsSubmitting(true);
+  
+      // ✅ Call the actual add schedule handler
+      await handleAddSchedule({
+        formData,
+        selectedSlot,
+        closePopover,
+      });
+  
+    } catch (error) {
+      console.error("❗ Error adding schedule:", error);
+      alert("❗ An error occurred while adding the schedule.");
+    } finally {
+      // ✅ Re-enable the submit button after processing
+      setIsSubmitting(false);
+    }
   };
+  
 
   const formatDateTimeLocal = (date: Date) => {
     const year = date.getFullYear();
@@ -653,21 +679,37 @@ const renderDayView = ({
     {isReadOnly ? (
           <>
             <h3>Create Appointment Request</h3>
-            <form onSubmit={async (e) => {
-              e.preventDefault();
-              if (!appointmentRequestData.proposedTimes.length) {
-                alert("Please add at least one proposed time");
-                return;
-              }
-              if (onCreateAppointmentRequest) {
-                await onCreateAppointmentRequest({
-                  proposedTimes: appointmentRequestData.proposedTimes,
-                  selectedTime: appointmentRequestData.selectedTime,
-                  message: appointmentRequestData.message
-                });
-                closePopover(); // Use modified close function
-              }
-            }}>
+            <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+
+                  if (isSubmitting) return; // Prevent double submit
+
+                  if (!appointmentRequestData.proposedTimes.length) {
+                    alert("Please add at least one proposed time");
+                    return;
+                  }
+
+                  try {
+                    setIsSubmitting(true);
+
+                    if (onCreateAppointmentRequest) {
+                      await onCreateAppointmentRequest({
+                        proposedTimes: appointmentRequestData.proposedTimes,
+                        selectedTime: appointmentRequestData.selectedTime,
+                        message: appointmentRequestData.message,
+                      });
+                      closePopover();
+                    }
+                  } catch (error) {
+                    console.error("❗ Error creating appointment request:", error);
+                    alert("❗ An error occurred while creating the request.");
+                  } finally {
+                    setIsSubmitting(false);
+                  }
+                }}
+              >
+
               {/* Date Input Section */}
               <div className={styles.dateInputGroup}>
                 <div className={styles.dateInputRow}>
@@ -847,11 +889,24 @@ const renderDayView = ({
             </label>
 
             <div className={styles.popoverButtons}>
-              <button type="submit">Add Schedule</button>
-              <button type="button" onClick={closePopover}>
-                Cancel
-              </button>
-            </div>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className={styles.primaryButton}
+                >
+                  {isSubmitting ? "Saving..." : "Add Schedule"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={closePopover}
+                  className={styles.secondaryButton}
+                  disabled={isSubmitting} // Optional: disable cancel while submitting
+                >
+                  Cancel
+                </button>
+              </div>
+
           </form>
         </>
       )}
@@ -876,6 +931,8 @@ const renderWeekView = ({
   onCreateAppointmentRequest,
   appointmentRequestData,            // 👈 Add this
   setAppointmentRequestData,         // 👈 And this
+  isSubmitting,                // ✅ Added
+  setIsSubmitting,             // ✅ Added
 }: {
   handleAddSchedule: ({
     formData,
@@ -913,7 +970,12 @@ const renderWeekView = ({
     selectedTime?: string;
     message?: string;
   }) => Promise<void>;
+  // ✅ NEW PROPS FOR SUBMITTING STATE
+  isSubmitting: boolean;
+  setIsSubmitting: React.Dispatch<React.SetStateAction<boolean>>;
+
 }) => {
+
   const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const startOfWeek = new Date(currentDate);
@@ -965,14 +1027,32 @@ const renderWeekView = ({
     setSelectedSlot({ ...selectedSlot, endDate: newEndDate });
   };
 
-  const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!selectedSlot) {
-      alert("❗ Please select a time slot.");
-      return;
-    }
-    await handleAddSchedule({ formData, selectedSlot, closePopover });
-  };
+const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  event.preventDefault();
+
+  if (isSubmitting) return; // Prevent duplicate submits!
+
+  if (!selectedSlot) {
+    alert("❗ Please select a time slot.");
+    return;
+  }
+
+  try {
+    setIsSubmitting(true);
+
+    await handleAddSchedule({
+      formData,
+      selectedSlot,
+      closePopover,
+    });
+  } catch (error) {
+    console.error("❗ Error adding schedule:", error);
+    alert("❗ An error occurred while adding the schedule.");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
 
   const isPastTimeSlot = (dayIndex: number, hour: number) => {
     const slotDate = new Date(startOfWeek);
@@ -1088,19 +1168,33 @@ const renderWeekView = ({
                 <h3>Create Appointment Request</h3>
                 <form onSubmit={async (e) => {
                   e.preventDefault();
+
+                  if (isSubmitting) return;
+
                   if (!appointmentRequestData.proposedTimes.length) {
                     alert("Please add at least one proposed time.");
                     return;
                   }
-                  if (onCreateAppointmentRequest) {
-                    await onCreateAppointmentRequest({
-                      proposedTimes: appointmentRequestData.proposedTimes,
-                      selectedTime: appointmentRequestData.selectedTime,
-                      message: appointmentRequestData.message
-                    });
-                    setSelectedSlot(null);
+
+                  try {
+                    setIsSubmitting(true);
+
+                    if (onCreateAppointmentRequest) {
+                      await onCreateAppointmentRequest({
+                        proposedTimes: appointmentRequestData.proposedTimes,
+                        selectedTime: appointmentRequestData.selectedTime,
+                        message: appointmentRequestData.message
+                      });
+                      setSelectedSlot(null);
+                    }
+                  } catch (error) {
+                    console.error("❗ Error creating appointment request:", error);
+                    alert("❗ An error occurred while sending the request.");
+                  } finally {
+                    setIsSubmitting(false);
                   }
                 }}>
+
                   <div className={styles.proposedTimesList}>
                     {appointmentRequestData.proposedTimes.map((time, index) => (
                       <div key={index} className={styles.proposedTimeItem}>
@@ -1233,11 +1327,24 @@ const renderWeekView = ({
                     </select>
                   </label>
                   <div className={styles.popoverButtons}>
-                    <button type="submit">Add Schedule</button>
-                    <button type="button" onClick={closePopover}>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className={styles.primaryButton}
+                    >
+                      {isSubmitting ? "Saving..." : "Add Schedule"}
+                    </button>
+                    
+                    <button
+                      type="button"
+                      onClick={closePopover}
+                      className={styles.secondaryButton}
+                      disabled={isSubmitting}
+                    >
                       Cancel
                     </button>
                   </div>
+
                 </form>
               </>
             )}
