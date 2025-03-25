@@ -1,9 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import styles from './invitations.module.css';
 import { supabase } from '@/lib/supabase';
-import { getUserById } from '@/lib/supabaseHelpers';
 
 interface AppointmentRequest {
   id: string;
@@ -31,18 +30,47 @@ interface Schedule {
 }
 
 interface InvitationsProps {
+  fetchAppointments: () => Promise<void>;
+  appointments: AppointmentRequest[];
+  senderEmails: { [key: string]: string };
   fetchSchedules: () => Promise<void>;
   schedules: Schedule[];
 }
 
-export default function Invitations({ fetchSchedules, schedules }: InvitationsProps) {
-  const [appointments, setAppointments] = useState<AppointmentRequest[]>([]);
-  const [senderEmails, setSenderEmails] = useState<{ [key: string]: string }>({});
+function isErrorWithMessage(error: unknown): error is { message: string } {
+  return typeof error === "object" && error !== null && "message" in error;
+}
+
+function formatDateTimeRange(start: Date, end: Date): string {
+  const dateOptions: Intl.DateTimeFormatOptions = { 
+    weekday: 'short', 
+    year: 'numeric', 
+    month: 'short', 
+    day: 'numeric' 
+  };
+  const timeOptions: Intl.DateTimeFormatOptions = { 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  };
+
+  return `${start.toLocaleDateString('en-US', dateOptions)} ${start.toLocaleTimeString('en-US', timeOptions)} - ${end.toLocaleTimeString('en-US', timeOptions)}`;
+}
+
+export default function Invitations({
+  fetchAppointments,
+  appointments,
+  senderEmails,
+  fetchSchedules,
+  schedules,
+}: InvitationsProps) {
   const [selectedTimes, setSelectedTimes] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(false);
-
   const [showSchedulePopover, setShowSchedulePopover] = useState(false);
-  const [selectedSlot, setSelectedSlot] = useState<{ date: Date; endDate: Date } | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<{ 
+    date: Date; 
+    endDate: Date;
+    appointmentId: string;
+  } | null>(null);
   const [formData, setFormData] = useState({
     type: 'APPOINTMENT',
     title: '',
@@ -50,46 +78,6 @@ export default function Invitations({ fetchSchedules, schedules }: InvitationsPr
     isAllDay: false,
     repeat: 'None',
   });
-
-  useEffect(() => {
-    const fetchAppointments = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          console.error('No authenticated user found');
-          return;
-        }
-
-        const { data, error } = await supabase
-          .from('AppointmentRequest')
-          .select('*')
-          .eq('receiverId', user.id);
-
-        if (error) {
-          console.error('Error fetching appointments:', error);
-          return;
-        }
-
-        setAppointments(data || []);
-
-        const emailsMap: { [key: string]: string } = {};
-        for (const appointment of data || []) {
-          if (!emailsMap[appointment.senderId]) {
-            const email = await getUserById(appointment.senderId);
-            if (email) {
-              emailsMap[appointment.senderId] = email;
-            }
-          }
-        }
-
-        setSenderEmails(emailsMap);
-      } catch (error) {
-        console.error('Error in fetchAppointments:', error);
-      }
-    };
-
-    fetchAppointments();
-  }, []);
 
   const handleTimeSelect = (appointmentId: string, selectedTime: string) => {
     setSelectedTimes(prev => ({
@@ -100,68 +88,46 @@ export default function Invitations({ fetchSchedules, schedules }: InvitationsPr
 
   const handleAccept = async (appointmentId: string) => {
     const selectedTime = selectedTimes[appointmentId];
-  
+
     if (!selectedTime) {
       alert('Please select a time before accepting!');
       return;
     }
-  
+
     setLoading(true);
-  
+
     try {
-      console.log('Attempting to accept appointment with ID:', appointmentId);
-      console.log('Selected time:', selectedTime);
-  
-      const { data: existing } = await supabase
-        .from('AppointmentRequest')
-        .select('*')
-        .eq('id', appointmentId);
-  
-      console.log('Existing appointment:', existing);
-  
-      const { data, error } = await supabase
-        .from('AppointmentRequest')
-        .update({
-          selectedTime,
-          status: 'ACCEPTED',
-        })
-        .eq('id', appointmentId)
-        .select('*');  // <-- specify columns to return
-  
-      if (error) {
-        console.error('Error accepting invitation:', error.message);
-        alert('Failed to accept invitation.');
-        return;
-      }
-  
-      console.log('Updated appointment:', data);
-  
-      setAppointments((prev) =>
-        prev.map((app) =>
-          app.id === appointmentId
-            ? { ...app, status: 'ACCEPTED', selectedTime }
-            : app
-        )
-      );
-  
-      setSelectedSlot({
-        date: new Date(selectedTime),
-        endDate: new Date(new Date(selectedTime).getTime() + 60 * 60 * 1000),
-      });
+      const startDate = new Date(selectedTime);
+      const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+      
+      const appointment = appointments.find(a => a.id === appointmentId);
+      const senderName = senderEmails[appointment?.senderId || ''] || 'Unknown';
+
       setShowSchedulePopover(true);
-    } catch (err) {
-      console.error('Accept error:', err);
-      alert('An error occurred while accepting.');
+      setSelectedSlot({
+        date: startDate,
+        endDate: endDate,
+        appointmentId: appointmentId
+      });
+
+      setFormData({
+        type: 'APPOINTMENT',
+        title: `Meeting with ${senderName}`,
+        description: appointment?.message || '',
+        isAllDay: false,
+        repeat: 'None',
+      });
+
+    } catch (error) {
+      console.error('Error preparing acceptance:', error);
+      alert('Failed to start acceptance process');
+    } finally {
+      setLoading(false);
     }
-  
-    setLoading(false);
   };
-  
-  
 
   const handleReject = async (appointmentId: string) => {
-    const confirmReject = confirm('Are you sure you want to reject this invitation?');
-    if (!confirmReject) return;
+    if (!confirm('Are you sure you want to reject this invitation?')) return;
 
     setLoading(true);
 
@@ -171,62 +137,55 @@ export default function Invitations({ fetchSchedules, schedules }: InvitationsPr
         .update({ status: 'REJECTED' })
         .eq('id', appointmentId);
 
-      if (error) {
-        console.error('Error rejecting invitation:', error);
-        alert('Failed to reject invitation.');
-        return;
-      }
+      if (error) throw error;
 
-      setAppointments(prev =>
-        prev.map(app =>
-          app.id === appointmentId
-            ? { ...app, status: 'REJECTED' }
-            : app
-        )
-      );
-
+      await fetchAppointments();
       alert('Invitation rejected!');
-    } catch (err) {
-      console.error('Reject error:', err);
-      alert('An error occurred while rejecting.');
+    } catch (error) {
+      console.error('Reject error:', error);
+      let errorMessage = 'An error occurred while rejecting.';
+      
+      if (isErrorWithMessage(error)) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      alert(errorMessage);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
-  const handleAddSchedule = async () => {
-    if (!selectedSlot) {
-      alert('No time slot selected!');
+  const handleAddSchedule = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!selectedSlot?.appointmentId) {
+      alert('No appointment selected!');
       return;
     }
 
-    const startDateTime = selectedSlot.date.toISOString();
-    const endDateTime = selectedSlot.endDate.toISOString();
-
-    const hasConflict = schedules.some((existing) => {
-      const existingStart = new Date(existing.startDateTime).getTime();
-      const existingEnd = new Date(existing.endDateTime).getTime();
-
-      return (
-        new Date(startDateTime).getTime() < existingEnd &&
-        new Date(endDateTime).getTime() > existingStart
-      );
-    });
-
-    if (hasConflict) {
-      alert("There's a conflict with another schedule! Please select a different time.");
-      return;
-    }
+    setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.getSession();
+      const startDateTime = selectedSlot.date.toISOString();
+      const endDateTime = selectedSlot.endDate.toISOString();
 
-      if (error || !data.session) {
-        console.error('No session found:', error);
-        return;
+      const hasConflict = schedules.some((existing) => {
+        const existingStart = new Date(existing.startDateTime).getTime();
+        const existingEnd = new Date(existing.endDateTime).getTime();
+        const newStart = new Date(startDateTime).getTime();
+        const newEnd = new Date(endDateTime).getTime();
+
+        return newStart < existingEnd && newEnd > existingStart;
+      });
+
+      if (hasConflict) {
+        throw new Error("There's a conflict with another schedule! Please select a different time.");
       }
 
-      const session = data.session;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Session expired. Please log in again.');
 
       const response = await fetch("/api/schedule", {
         method: "POST",
@@ -235,35 +194,45 @@ export default function Invitations({ fetchSchedules, schedules }: InvitationsPr
           'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
-          type: formData.type,
-          title: formData.title,
-          description: formData.description,
+          ...formData,
           startDateTime,
           endDateTime,
-          isAllDay: formData.isAllDay,
-          repeat: formData.repeat,
-          userId: data.session.user.id,
+          userId: session.user.id,
         }),
       });
 
-      if (response.ok) {
-        alert("Schedule added successfully!");
-        await fetchSchedules();
-        setShowSchedulePopover(false);
-        setFormData({
-          type: 'APPOINTMENT',
-          title: '',
-          description: '',
-          isAllDay: false,
-          repeat: 'None',
-        });
-      } else {
+      if (!response.ok) {
         const errorData = await response.json();
-        alert(`Failed to add schedule: ${errorData.error}`);
+        throw new Error(errorData.error || 'Failed to create schedule');
       }
+
+      const { error } = await supabase
+        .from('AppointmentRequest')
+        .update({
+          selectedTime: startDateTime,
+          status: 'ACCEPTED',
+        })
+        .eq('id', selectedSlot.appointmentId);
+
+      if (error) throw error;
+
+      await Promise.all([fetchAppointments(), fetchSchedules()]);
+      setShowSchedulePopover(false);
+      alert('Appointment successfully accepted and scheduled!');
+
     } catch (error) {
-      console.error("Error adding schedule:", error);
-      alert("An error occurred while adding the schedule.");
+      console.error("Error in acceptance process:", error);
+      let errorMessage = "Failed to complete acceptance";
+      
+      if (isErrorWithMessage(error)) {
+        errorMessage = error.message;
+      } else if (typeof error === "string") {
+        errorMessage = error;
+      }
+      
+      alert(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -278,7 +247,7 @@ export default function Invitations({ fetchSchedules, schedules }: InvitationsPr
           <div key={appointment.id} className={styles.invitationCard}>
             <div className={styles.cardHeader}>
               <h3>Appointment Request</h3>
-              <span className={`${styles.status} ${styles[appointment.status]}`}>
+              <span className={`${styles.status} ${styles[appointment.status.toLowerCase()]}`}>
                 {appointment.status}
               </span>
             </div>
@@ -327,39 +296,21 @@ export default function Invitations({ fetchSchedules, schedules }: InvitationsPr
                 </ul>
               </div>
 
-              {appointment.selectedTime && appointment.status !== 'PENDING' && (
-                <div className={styles.detailItem}>
-                  <label>Selected Time:</label>
-                  <p>
-                    {new Date(appointment.selectedTime).toLocaleString([], {
-                      weekday: 'short',
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </p>
-                </div>
-              )}
-
               {appointment.status === 'PENDING' && (
-                <div className={styles.buttonGroup}>
+                <div className={styles.actions}>
                   <button
-                    type="button"
-                    className={styles.acceptButton}
-                    onClick={() => handleAccept(appointment.id)}
-                    disabled={loading}
-                  >
-                    Accept
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.rejectButton}
                     onClick={() => handleReject(appointment.id)}
                     disabled={loading}
+                    className={styles.rejectButton}
                   >
                     Reject
+                  </button>
+                  <button
+                    onClick={() => handleAccept(appointment.id)}
+                    disabled={loading}
+                    className={styles.acceptButton}
+                  >
+                    {loading ? 'Processing...' : 'Accept'}
                   </button>
                 </div>
               )}
@@ -368,49 +319,48 @@ export default function Invitations({ fetchSchedules, schedules }: InvitationsPr
         ))
       )}
 
-      {/* Popover for Adding Schedule */}
       {showSchedulePopover && selectedSlot && (
         <div className={styles.popover}>
           <div className={styles.popoverContent}>
-            <h3>Add Schedule</h3>
-            <form onSubmit={async (e) => {
-              e.preventDefault();
-              await handleAddSchedule();
-            }}>
-              <label>
-                Type:
-                <select
-                  value={formData.type}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                  required
-                >
-                  <option value="TASK">Task</option>
-                  <option value="APPOINTMENT">Appointment</option>
-                  <option value="RESTDAY">Rest Day</option>
-                  <option value="BLOCK">Block</option>
-                </select>
-              </label>
+            <h3>Confirm Appointment Schedule</h3>
+            <form onSubmit={handleAddSchedule}>
+              {/* Time Display Section */}
+              <div className={styles.timeDisplay}>
+                <label>Scheduled Time:</label>
+                <p>{formatDateTimeRange(selectedSlot.date, selectedSlot.endDate)}</p>
+              </div>
 
-              <label>
-                Title:
+              <div className={styles.formGroup}>
+                <label>Title:</label>
                 <input
                   type="text"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   required
                 />
-              </label>
+              </div>
 
-              <label>
-                Description:
+              <div className={styles.formGroup}>
+                <label>Description:</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
-              </label>
+              </div>
 
-              <label>
-                Repeat:
+              <div className={styles.formGroup}>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={formData.isAllDay}
+                    onChange={(e) => setFormData({ ...formData, isAllDay: e.target.checked })}
+                  />
+                  All Day Event
+                </label>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label>Repeat:</label>
                 <select
                   value={formData.repeat}
                   onChange={(e) => setFormData({ ...formData, repeat: e.target.value })}
@@ -420,25 +370,17 @@ export default function Invitations({ fetchSchedules, schedules }: InvitationsPr
                   <option value="Weekly">Weekly</option>
                   <option value="Monthly">Monthly</option>
                 </select>
-              </label>
-
-              <label>
-                All Day:
-                <input
-                  type="checkbox"
-                  checked={formData.isAllDay}
-                  onChange={(e) => setFormData({ ...formData, isAllDay: e.target.checked })}
-                />
-              </label>
+              </div>
 
               <div className={styles.buttonGroup}>
-                <button type="submit" className={styles.saveButton} disabled={loading}>
-                  {loading ? 'Saving...' : 'Save'}
+                <button type="submit" className={styles.confirmButton} disabled={loading}>
+                  {loading ? 'Saving...' : 'Confirm & Accept'}
                 </button>
                 <button
                   type="button"
                   className={styles.cancelButton}
                   onClick={() => setShowSchedulePopover(false)}
+                  disabled={loading}
                 >
                   Cancel
                 </button>

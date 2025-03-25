@@ -184,4 +184,27 @@
            box-sizing: border-box;
          }
          
+      /*NOTIFICATION*/
+
+      .notificationsContainer {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        max-width: 300px;
+        z-index: 1000;
+      }
+      
+      .notification {
+        background-color: #f44336;
+        color: white;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 10px;
+        animation: fadeOut 5s forwards;
+      }
+      
+      @keyframes fadeOut {
+        0% { opacity: 1; }
+        100% { opacity: 0; display: none; }
+      }
       

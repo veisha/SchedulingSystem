@@ -10,6 +10,7 @@ import Invitations from "@/components/invitations";
 import Settings from "@/components/settings";
 import styles from "./Dashboard.module.css";
 import Image from "next/image"; // ✅ Import Image component
+import { getUserById } from '@/lib/supabaseHelpers';
 
 // Define Schedule interface (adjust if you have this globally)
 interface Schedule {
@@ -24,6 +25,17 @@ interface Schedule {
   status?: string;
   userId: string;
 }
+interface AppointmentRequest {
+  id: string;
+  senderId: string;
+  receiverId: string;
+  proposedTimes: string[][];
+  selectedTime: string | null;
+  status: string;
+  message: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export default function Dashboard() {
   const router = useRouter();
@@ -36,11 +48,94 @@ export default function Dashboard() {
   >("calendar");
   const [currentDateTime, setCurrentDateTime] = useState<Date>(new Date());
   const [calendarView, setCalendarView] = useState<"day" | "week" | "month" | "year">("day");
+  const [notifications, setNotifications] = useState<{ id: string; message: string }[]>([]);
 
   const sidebarRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const [appointments, setAppointments] = useState<AppointmentRequest[]>([]);
+  const [senderEmails, setSenderEmails] = useState<{ [key: string]: string }>({});
+
+  const fetchAppointments = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("AppointmentRequest")
+        .select("*")
+        .eq("receiverId", user.id);
+
+      if (error) {
+        console.error("Error fetching appointments:", error);
+        return;
+      }
+
+      setAppointments(data || []);
+
+      const emailsMap: { [key: string]: string } = {};
+      for (const appointment of data || []) {
+        if (!emailsMap[appointment.senderId]) {
+          const email = await getUserById(appointment.senderId);
+          if (email) {
+            emailsMap[appointment.senderId] = email;
+          }
+        }
+      }
+
+      setSenderEmails(emailsMap);
+
+      // ✅ NEW: Show a notification for new pending invitations
+      const pendingAppointments = data?.filter((app) => app.status === "PENDING");
+      if (pendingAppointments.length > 0) {
+        addNotification(`📩 You have ${pendingAppointments.length} new invitations!`);
+      }
+    } catch (error) {
+      console.error("Error in fetchAppointments:", error);
+    }
+  }, [user]);
+
+  // ✅ Fetch appointments when the user is authenticated
+  useEffect(() => {
+    if (user) {
+      fetchAppointments();
+    }
+  }, [user, fetchAppointments]);
+
+
+
+  // Function to add a notification
+  const addNotification = (message: string) => {
+    const id = Date.now().toString(); // Unique ID for each notification
+    setNotifications((prev) => [...prev, { id, message }]);
+
+    // Remove notification after 5 seconds
+    setTimeout(() => {
+      setNotifications((prev) => prev.filter((notif) => notif.id !== id));
+    }, 5000);
+  };
+
+  useEffect(() => {
+    if (!user) return;
+  
+    const channel = supabase
+      .channel("appointment-notifications")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "AppointmentRequest" }, (payload) => {
+        if (payload.new.receiverId === user.id) {
+          addNotification(`📩 New appointment request received!`);
+          fetchAppointments(); // ✅ Refresh appointments when a new one is added
+        }
+      })
+      .subscribe();
+  
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, fetchAppointments]);
+  
+  
+  
 
   // ✅ Get the authenticated user on mount
   useEffect(() => {
@@ -180,6 +275,17 @@ export default function Dashboard() {
       ref={containerRef}
       className={`${styles.container} ${!sidebarVisible ? styles.hiddenSidebar : ""}`}
     >
+
+      {/* Notifications */}
+      <div className={styles.notificationsContainer}>
+        {notifications.map((notif) => (
+          <div key={notif.id} className={styles.notification}>
+            {notif.message}
+          </div>
+        ))}
+      </div>
+
+
       {/* Header */}
       <div ref={headerRef} className={styles.header}>
         <div>{formatHeaderDisplay()}</div>
@@ -275,6 +381,9 @@ export default function Dashboard() {
         {currentContent === "mySchedules" && <MySchedules />}
         {currentContent === "invitations" && 
         <Invitations 
+        fetchAppointments={fetchAppointments} 
+        appointments={appointments} 
+        senderEmails={senderEmails} 
         fetchSchedules={fetchSchedules} 
         schedules={schedules}
         />}
