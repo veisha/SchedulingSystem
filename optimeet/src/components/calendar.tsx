@@ -982,6 +982,36 @@ const renderWeekView = ({
   startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
   const now = new Date();
 
+  const getCurrentHour = () => {
+    const now = new Date();
+    const viewedDate = new Date(currentDate);
+    
+    // Only highlight if it's the current week
+    if (
+      now.getFullYear() === viewedDate.getFullYear() &&
+      now.getMonth() === viewedDate.getMonth() &&
+      now.getDate() >= viewedDate.getDate() - viewedDate.getDay() &&
+      now.getDate() <= viewedDate.getDate() + (6 - viewedDate.getDay())
+    ) {
+      return now.getHours();
+    }
+    return -1;
+  };
+
+  const currentHour = getCurrentHour();
+
+// Add current time slot check
+const isCurrentTimeSlot = (dayIndex: number, hour: number) => {
+  const slotDate = new Date(startOfWeek);
+  slotDate.setDate(startOfWeek.getDate() + dayIndex);
+  return (
+    slotDate.getDate() === now.getDate() &&
+    slotDate.getMonth() === now.getMonth() &&
+    slotDate.getFullYear() === now.getFullYear() &&
+    hour === now.getHours()
+  );
+};
+
   const formatDateTimeLocal = (date: Date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -1027,31 +1057,31 @@ const renderWeekView = ({
     setSelectedSlot({ ...selectedSlot, endDate: newEndDate });
   };
 
-const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-  event.preventDefault();
+  const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
 
-  if (isSubmitting) return; // Prevent duplicate submits!
+    if (isSubmitting) return; // Prevent duplicate submits!
 
-  if (!selectedSlot) {
-    alert("❗ Please select a time slot.");
-    return;
-  }
+    if (!selectedSlot) {
+      alert("❗ Please select a time slot.");
+      return;
+    }
 
-  try {
-    setIsSubmitting(true);
+    try {
+      setIsSubmitting(true);
 
-    await handleAddSchedule({
-      formData,
-      selectedSlot,
-      closePopover,
-    });
-  } catch (error) {
-    console.error("❗ Error adding schedule:", error);
-    alert("❗ An error occurred while adding the schedule.");
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+      await handleAddSchedule({
+        formData,
+        selectedSlot,
+        closePopover,
+      });
+    } catch (error) {
+      console.error("❗ Error adding schedule:", error);
+      alert("❗ An error occurred while adding the schedule.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
 
   const isPastTimeSlot = (dayIndex: number, hour: number) => {
@@ -1125,7 +1155,12 @@ const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
       <div className={styles.weekBody}>
         <div className={styles.timeColumn}>
           {hours.map((hour) => (
-            <div key={hour} className={styles.timeSlot}>
+            <div 
+              key={hour} 
+              className={`${styles.timeSlot} ${
+                hour === currentHour ? styles.currentTime : ""
+              }`}
+            >
               {new Date(0, 0, 0, hour).toLocaleTimeString([], { 
                 hour: "2-digit", 
                 minute: "2-digit" 
@@ -1140,17 +1175,20 @@ const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
               {hours.map((hour) => {
                 const isPast = isPastTimeSlot(dayIndex, hour);
                 const isOccupied = isOccupiedTimeSlot(dayIndex, hour);
+                const isCurrent = isCurrentTimeSlot(dayIndex, hour);
                 
                 return (
                   <div
                     key={hour}
-                    className={`${styles.eventSlot} ${
-                      isOccupied ? styles.occupiedSlot : ""
-                    } ${isPast ? styles.pastSlot : ""}`}
+                    className={`${styles.eventSlot} 
+                      ${isOccupied ? styles.occupiedSlot : ""}
+                      ${isPast ? styles.pastSlot : ""}
+                      ${isCurrent ? styles.currentTime : ""}`}
                     onClick={!isPast && !isOccupied ? () => handleEventSlotClick(dayIndex, hour) : undefined}
                     style={{ cursor: isPast || isOccupied ? "not-allowed" : "pointer" }}
                   >
                     {isOccupied && <span className={styles.eventLabel}>Scheduled</span>}
+                    {isCurrent && <div className={styles.currentTimeMarker} />}
                   </div>
                 );
               })}
