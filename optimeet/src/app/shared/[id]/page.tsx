@@ -63,10 +63,11 @@ export default function SharedSchedulesPage() {
         if (!response.ok) throw new Error("Failed to fetch schedules.");
         
         let { schedules } = await response.json();
+        // page.tsx - In fetchSharedSchedules function
         schedules = schedules.map((s: Schedule) => ({
           ...s,
-          startDateTime: new Date(s.startDateTime + "Z"),
-          endDateTime: new Date(s.endDateTime + "Z"),
+          startDateTime: new Date(s.startDateTime), // Remove + "Z"
+          endDateTime: new Date(s.endDateTime),     // Remove + "Z"
         }));
         setSchedules(schedules);
 

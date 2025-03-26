@@ -137,12 +137,14 @@ export default function MySchedules() {
                   {/* Schedule Details */}
                   <h2 className={styles.scheduleTitle}>{schedule.title}</h2>
                   <p className={styles.scheduleText}>{schedule.description}</p>
+
                   <p className={styles.scheduleText}>
-                    <strong>Start:</strong> {new Date(schedule.startDateTime).toLocaleString()}
+                    <strong>Start:</strong> {new Date(schedule.startDateTime).toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}
                   </p>
                   <p className={styles.scheduleText}>
-                    <strong>End:</strong> {new Date(schedule.endDateTime).toLocaleString()}
+                    <strong>End:</strong> {new Date(schedule.endDateTime).toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}
                   </p>
+                  
                   <p className={styles.scheduleText}>
                     <strong>All Day:</strong> {schedule.isAllDay ? "Yes" : "No"}
                   </p>

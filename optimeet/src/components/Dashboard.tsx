@@ -156,34 +156,92 @@ export default function Dashboard() {
   // ✅ Fetch schedules function that can be reused
   const fetchSchedules = useCallback(async () => {
     if (!user) return;
-
+  
     try {
       const response = await fetch(`/api/schedules-by-user-id?userId=${user.id}`);
       if (!response.ok) {
         console.error("Failed to fetch schedules");
         return;
       }
-
+  
       const { schedules: fetchedSchedules } = await response.json();
-
-      // ✅ Convert date strings to Date objects and adjust for local timezone
-      const convertedSchedules = fetchedSchedules.map((schedule: Schedule) => {
-        const startDateTime = new Date(schedule.startDateTime + "Z");
-        const endDateTime = new Date(schedule.endDateTime + "Z");
-
+      const currentTime = new Date();
+  
+      // ✅ Define Schedule type
+      interface Schedule {
+        id: string;
+        type: string;
+        title: string;
+        userId: string;
+        startDateTime: Date;
+        endDateTime: Date;
+        status: "UPCOMING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+        newStatus?: "UPCOMING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED"; // ✅ Fix
+      }
+  
+      // ✅ Process schedules
+      const updatedSchedules: Schedule[] = fetchedSchedules.map((schedule: any) => {
+        // Convert UTC dates to local Manila time
+        const startDateTime = new Date(schedule.startDateTime);
+        const endDateTime = new Date(schedule.endDateTime);
+  
+        let newStatus: "COMPLETED" | "IN_PROGRESS" | "UPCOMING" | "CANCELLED" =
+          currentTime > endDateTime
+            ? "COMPLETED"
+            : currentTime >= startDateTime
+            ? "IN_PROGRESS"
+            : "UPCOMING";
+  
         return {
           ...schedule,
           startDateTime,
           endDateTime,
+          newStatus, // ✅ Add this for updating the backend
         };
       });
-
-      setSchedules(convertedSchedules);
-      console.log("✅ Schedules fetched & converted:", convertedSchedules);
+  
+      setSchedules(updatedSchedules);
+      console.log("✅ Schedules fetched, converted, & statuses updated:", updatedSchedules);
+  
+      // ✅ Identify schedules that need an update
+      const schedulesToUpdate = updatedSchedules.filter(
+        (schedule) => schedule.status !== schedule.newStatus // ✅ Compare old status vs new status
+      );
+  
+      if (schedulesToUpdate.length > 0) {
+        console.log("🔄 Updating statuses in Supabase:", schedulesToUpdate);
+  
+        // ✅ Get user auth token
+        const { data: session } = await supabase.auth.getSession();
+        const accessToken = session?.session?.access_token;
+  
+        if (!accessToken) {
+          console.error("❌ No access token found. User may not be authenticated.");
+          return;
+        }
+  
+        // ✅ Send `newStatus` instead of `status`
+        const updateResponse = await fetch("/api/update-schedules-status", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ schedules: schedulesToUpdate }), // ✅ Fix
+        });
+  
+        if (!updateResponse.ok) {
+          console.error("❌ Failed to update schedule statuses in Supabase");
+        } else {
+          console.log("✅ Schedule statuses successfully updated in Supabase");
+        }
+      }
     } catch (error) {
-      console.error("Error fetching schedules:", error);
+      console.error("Error fetching/updating schedules:", error);
     }
   }, [user]);
+  
+  
 
   // ✅ Fetch schedules after user is authenticated
   useEffect(() => {

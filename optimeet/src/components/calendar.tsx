@@ -430,24 +430,24 @@ const renderDayView = ({
 
 
   // Filter schedules for the current day
-  const schedulesForTheDay = schedules.filter((schedule) => {
-    const start = new Date(schedule.startDateTime);
-    const end = new Date(schedule.endDateTime);
-  
-    // If end is before start, it spans midnight, so we add a day
-    if (end <= start) {
-      end.setDate(end.getDate() + 1);
-    }
-  
-    const dayStart = new Date(currentDate);
-    dayStart.setHours(0, 0, 0, 0);
-  
-    const dayEnd = new Date(dayStart);
-    dayEnd.setHours(24, 0, 0, 0); // end of day
-  
-    // Check if the schedule overlaps with the current day
-    return start < dayEnd && end > dayStart;
-  });
+const schedulesForTheDay = schedules.filter((schedule) => {
+  const start = new Date(schedule.startDateTime);
+  const end = new Date(schedule.endDateTime);
+
+  // Handle events spanning midnight
+  if (end <= start) {
+    end.setDate(end.getDate() + 1);
+  }
+
+  const dayStart = new Date(currentDate);
+  dayStart.setHours(0, 0, 0, 0); // Local start of day
+
+  const dayEnd = new Date(dayStart);
+  dayEnd.setDate(dayStart.getDate() + 1); // Local start of next day
+
+  // Check overlap using UTC timestamps
+  return start < dayEnd && end > dayStart;
+});
   
 
   const handleEventSlotClick = (hour: number) => {
@@ -956,12 +956,16 @@ const renderWeekView = ({
     proposedTimes: Array<{ start: string; end: string }>;
     selectedTime?: string;
     message: string;
+    newStart?: string;
+    newEnd?: string;
   };
   setAppointmentRequestData: React.Dispatch<
     React.SetStateAction<{
       proposedTimes: Array<{ start: string; end: string }>;
       selectedTime?: string;
       message: string;
+      newStart?: string;
+      newEnd?: string;
     }>
   >;
   
@@ -1048,8 +1052,6 @@ const isCurrentTimeSlot = (dayIndex: number, hour: number) => {
     setSelectedSlot({ date: selectedDate, hour, endDate });
   };
 
-  const closePopover = () => setSelectedSlot(null);
-
   const handleEndDateTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newEndDate = new Date(e.target.value);
     newEndDate.setMinutes(0, 0);
@@ -1084,6 +1086,7 @@ const isCurrentTimeSlot = (dayIndex: number, hour: number) => {
   };
 
 
+  
   const isPastTimeSlot = (dayIndex: number, hour: number) => {
     const slotDate = new Date(startOfWeek);
     slotDate.setDate(startOfWeek.getDate() + dayIndex);
@@ -1099,6 +1102,46 @@ const isCurrentTimeSlot = (dayIndex: number, hour: number) => {
       const start = new Date(schedule.startDateTime);
       const end = new Date(schedule.endDateTime);
       return slotDate >= start && slotDate < end;
+    });
+  };
+
+  const handleAddProposedTime = () => {
+    if (!appointmentRequestData.newStart || !appointmentRequestData.newEnd) {
+      alert("Please fill in both start and end times");
+      return;
+    }
+  
+    const startDate = new Date(appointmentRequestData.newStart);
+    const endDate = new Date(appointmentRequestData.newEnd);
+  
+    if (startDate >= endDate) {
+      alert("End time must be after start time");
+      return;
+    }
+  
+    if (startDate < new Date()) {
+      alert("Cannot add time slots in the past");
+      return;
+    }
+  
+    setAppointmentRequestData(prev => ({
+      ...prev,
+      proposedTimes: [
+        ...prev.proposedTimes,
+        { start: startDate.toISOString(), end: endDate.toISOString() }
+      ],
+      newStart: "",
+      newEnd: ""
+    }));
+  };
+
+  const closePopover = () => {
+    setSelectedSlot(null);
+    setAppointmentRequestData({
+      proposedTimes: [],
+      message: "",
+      newStart: "",
+      newEnd: ""
     });
   };
 
@@ -1204,57 +1247,84 @@ const isCurrentTimeSlot = (dayIndex: number, hour: number) => {
               {isReadOnly ? (
               <>
                 <h3>Create Appointment Request</h3>
-                <form onSubmit={async (e) => {
-                  e.preventDefault();
-
-                  if (isSubmitting) return;
-
-                  if (!appointmentRequestData.proposedTimes.length) {
-                    alert("Please add at least one proposed time.");
-                    return;
-                  }
-
-                  try {
-                    setIsSubmitting(true);
-
-                    if (onCreateAppointmentRequest) {
-                      await onCreateAppointmentRequest({
-                        proposedTimes: appointmentRequestData.proposedTimes,
-                        selectedTime: appointmentRequestData.selectedTime,
-                        message: appointmentRequestData.message
-                      });
-                      setSelectedSlot(null);
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (isSubmitting) return;
+                    if (!appointmentRequestData.proposedTimes.length) {
+                      alert("Please add at least one proposed time");
+                      return;
                     }
-                  } catch (error) {
-                    console.error("❗ Error creating appointment request:", error);
-                    alert("❗ An error occurred while sending the request.");
-                  } finally {
-                    setIsSubmitting(false);
-                  }
-                }}>
 
-                  <div className={styles.proposedTimesList}>
+                    try {
+                      setIsSubmitting(true);
+                      if (onCreateAppointmentRequest) {
+                        await onCreateAppointmentRequest({
+                          proposedTimes: appointmentRequestData.proposedTimes,
+                          selectedTime: appointmentRequestData.selectedTime,
+                          message: appointmentRequestData.message,
+                        });
+                        closePopover();
+                      }
+                    } catch (error) {
+                      console.error("Error creating request:", error);
+                      alert("Error creating request");
+                    } finally {
+                      setIsSubmitting(false);
+                    }
+                  }}
+                >
+                  {/* Date Inputs */}
+                  <div className={styles.dateInputGroup}>
+                    <div className={styles.dateInputRow}>
+                      <label>
+                        Start Date:
+                        <input
+                          type="datetime-local"
+                          value={appointmentRequestData.newStart}
+                          onChange={(e) => setAppointmentRequestData(prev => ({
+                            ...prev,
+                            newStart: e.target.value
+                          }))}
+                        />
+                      </label>
+                      <label>
+                        End Date:
+                        <input
+                          type="datetime-local"
+                          value={appointmentRequestData.newEnd}
+                          onChange={(e) => setAppointmentRequestData(prev => ({
+                            ...prev,
+                            newEnd: e.target.value
+                          }))}
+                        />
+                      </label>
+                      <button 
+                        type="button" 
+                        onClick={handleAddProposedTime}
+                        className={styles.addButton}
+                      >
+                        Add Date
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Proposed Times List */}
+                  <div className={styles.proposedDates}>
+                    <h4>Proposed Dates:</h4>
                     {appointmentRequestData.proposedTimes.map((time, index) => (
-                      <div key={index} className={styles.proposedTimeItem}>
-                        <label>
-                          <input
-                            type="radio"
-                            name="selectedTime"
-                            checked={appointmentRequestData.selectedTime === time.start}
-                            onChange={() => setAppointmentRequestData(prev => ({
-                              ...prev,
-                              selectedTime: time.start
-                            }))}
-                          />
-                          {new Date(time.start).toLocaleString()} - {new Date(time.end).toLocaleString()}
-                        </label>
+                      <div key={index} className={styles.dateItem}>
+                        <span>
+                          {new Date(time.start).toLocaleString()} - 
+                          {new Date(time.end).toLocaleString()}
+                        </span>
                         <button
                           type="button"
                           onClick={() => setAppointmentRequestData(prev => ({
                             ...prev,
-                            proposedTimes: prev.proposedTimes.filter((_, i) => i !== index),
-                            selectedTime: prev.selectedTime === time.start ? undefined : prev.selectedTime
+                            proposedTimes: prev.proposedTimes.filter((_, i) => i !== index)
                           }))}
+                          className={styles.removeButton}
                         >
                           Remove
                         </button>
@@ -1262,27 +1332,33 @@ const isCurrentTimeSlot = (dayIndex: number, hour: number) => {
                     ))}
                   </div>
 
-                  <div className={styles.addAnother}>
-                    <button type="button" onClick={() => setSelectedSlot(null)}>
-                      Click another available slot to add more times
-                    </button>
-                  </div>
-
-                  <label>
-                    Message (optional):
+                  {/* Message Input */}
+                  <label className={styles.messageInput}>
+                    Message:
                     <textarea
                       value={appointmentRequestData.message}
                       onChange={(e) => setAppointmentRequestData(prev => ({
                         ...prev,
                         message: e.target.value
                       }))}
-                      placeholder="Add a message to the receiver"
+                      placeholder="Optional message for the receiver"
                     />
                   </label>
 
-                  <div className={styles.popoverButtons}>
-                    <button type="submit">Send Request</button>
-                    <button type="button" onClick={closePopover}>
+                  {/* Form Buttons */}
+                  <div className={styles.formActions}>
+                    <button 
+                      type="submit" 
+                      className={styles.primaryButton}
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? "Sending..." : "Send Request"}
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={closePopover} 
+                      className={styles.secondaryButton}
+                    >
                       Cancel
                     </button>
                   </div>
