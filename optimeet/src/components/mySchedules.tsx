@@ -13,7 +13,8 @@ interface Schedule {
   endDateTime: string;
   isAllDay: boolean;
   repeat: string;
-  status: "COMPLETED" | "UPCOMING" | "CANCELED" | "IN_PROGRESS"; // Added status
+  status: "COMPLETED" | "UPCOMING" | "CANCELED" | "IN_PROGRESS";
+  type: string; // Add this line
 }
 
 const ITEMS_PER_PAGE = 5;
@@ -135,8 +136,10 @@ export default function MySchedules() {
                   </span>
                   
                   {/* Schedule Details */}
-                  <h2 className={styles.scheduleTitle}>{schedule.title}</h2>
-                  <p className={styles.scheduleText}>{schedule.description}</p>
+                    <h2 className={styles.scheduleTitle}>{schedule.title}</h2>
+                    <p className={styles.scheduleType}>{schedule.type}</p> {/* Add this line */}
+                    <p className={styles.scheduleText}>{schedule.description}</p>
+
 
                   <p className={styles.scheduleText}>
                     <strong>Start:</strong> {new Date(schedule.startDateTime).toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}
@@ -144,7 +147,7 @@ export default function MySchedules() {
                   <p className={styles.scheduleText}>
                     <strong>End:</strong> {new Date(schedule.endDateTime).toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}
                   </p>
-                  
+
                   <p className={styles.scheduleText}>
                     <strong>All Day:</strong> {schedule.isAllDay ? "Yes" : "No"}
                   </p>

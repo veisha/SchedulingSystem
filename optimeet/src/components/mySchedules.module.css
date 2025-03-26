@@ -113,10 +113,20 @@
   border-left-color: #dc3545;
 }
 
-.status-in-progress {
+.status-in_progress { /* underscore instead of hyphen */
   background: #fff3cd;
   color: #856404;
   border-left-color: #ffc107;
+}
+
+/* Schedule Type */
+.scheduleType {
+  font-size: 0.9em;
+  color: #666;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
 }
 
 /* Title */

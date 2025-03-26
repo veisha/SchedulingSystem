@@ -257,40 +257,6 @@ export default function Dashboard() {
     router.push("/login");
   };
 
-  // ✅ Sidebar toggle button positioning
-  const adjustButtonPosition = useCallback(() => {
-    const sidebar = sidebarRef.current;
-    const header = headerRef.current;
-    const button = buttonRef.current;
-
-    if (sidebar && header && button) {
-      const headerHeight = header.offsetHeight;
-
-      button.style.left = !sidebarVisible ? "0" : `${-15}px`;
-      button.style.top = `${headerHeight / 2}px`;
-    }
-  }, [sidebarVisible]);
-
-  // ✅ Toggle sidebar visibility
-  const handleToggleSidebar = () => {
-    setSidebarVisible((prev) => !prev);
-  };
-
-  // ✅ Adjust button on sidebar toggle
-  useEffect(() => {
-    adjustButtonPosition();
-  }, [sidebarVisible, adjustButtonPosition]);
-
-  // ✅ Window resize handler
-  useEffect(() => {
-    window.addEventListener("resize", adjustButtonPosition);
-    adjustButtonPosition();
-
-    return () => {
-      window.removeEventListener("resize", adjustButtonPosition);
-    };
-  }, [adjustButtonPosition]);
-
   // ✅ DateTime update
   const updateDateTime = (dateTime: Date) => {
     setCurrentDateTime(dateTime);
@@ -347,11 +313,6 @@ export default function Dashboard() {
       {/* Header */}
       <div ref={headerRef} className={styles.header}>
         <div>{formatHeaderDisplay()}</div>
-
-        {/* ✅ Use direct public path for the image */}
-        <button ref={buttonRef} onClick={handleToggleSidebar} className={styles.navButton}>
-          <Image src="/nav_btn.png" alt="Toggle Sidebar" width={40} height={40} />
-        </button>
       </div>
 
 
@@ -359,6 +320,7 @@ export default function Dashboard() {
       {sidebarVisible && (
         <aside ref={sidebarRef} className={styles.sidebar}>
           <div className={styles.sidebarLogoContainer}>
+            <Image src="/logo.png" alt="Optimeet Logo" className={styles.sidebarLogo} width={28} height={28} />
             <h2 className={styles.sidebarLogoText}>Optimeet</h2>
           </div>
 

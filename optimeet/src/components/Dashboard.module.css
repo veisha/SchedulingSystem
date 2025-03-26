@@ -15,52 +15,18 @@
         transition: grid-template-columns 0.3s ease;
       }
       
-      /* When sidebar is hidden, adjust grid layout */
-      .hiddenSidebar {
-        grid-template-columns: 1fr; /* No sidebar */
-        grid-template-areas:
-          "header"
-          "content";
-      }
-      
       /* =======================
          Header Styles
          ======================= */
       .header {
         grid-area: header;
-        background-color: #899878;
-        color: white;
+        background-color: #DDE5D0 ;
+        color: #2C3E50;
         padding: 10px;
         text-align: center;
         font-size: 24px;
         font-weight: bold;
         position: relative; /* Needed for button positioning */
-      }
-      
-      /* Toggle Button inside Header */
-      /*nav button*/
-
-      .navButton {
-        position: absolute;
-        transform: translateY(-50%);
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 0;
-        width: 30px;  /* Adjust if needed */
-        height: 30px; /* Adjust if needed */
-        left: 0; /* Adjusted dynamically with JS */
-        top: 50%; /* Adjusted dynamically with JS */
-      }
-      
-      .navButton img {
-        width: 100%;
-        height: 100%;
-        transition: transform 0.2s ease-in-out;
-      }
-      
-      .navButton:hover img {
-        transform: scale(1.1); /* Slight zoom effect */
       }
 
       /* =======================
@@ -68,7 +34,7 @@
          ======================= */
       .sidebar {
         grid-area: sidebar;
-        background-color: #222725;
+        background-color: #6D8B80;
         padding: 20px;
         color: white;
         display: flex;
@@ -76,26 +42,57 @@
         justify-content: space-between;
         transition: all 0.3s ease;
         overflow: hidden; /* Prevent scrolling in the sidebar */
-      }
-      
-      /* When sidebar is hidden completely */
-      .hidden {
-        display: none;
+        height: 100vh; /* Full viewport height */
+        padding-top: 14px;
       }
       
       /* --- Sidebar Components --- */
       
       /* Logo Section */
+      /* Container for the logo and text */
       .sidebarLogoContainer {
+        display: flex;
+        align-items: center;
+        justify-content: center;
         margin-bottom: 20px;
-        text-align: center;
+        gap: 5px;
       }
-      
+
+      /* Logo styling */
+      .sidebarLogo {
+        width: 28px; /* Same size as the "O" */
+        height: 28px;
+        
+        /* Use logotext.webp as a gradient */
+        background: url('/logotext.webp') center no-repeat;
+        background-size: cover;
+
+        /* Mask the background to fit the shape of the logo */
+        -webkit-mask-image: url('/logo.png');
+        mask-image: url('/logo.png');
+
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+      }
+
+      /* Text styling */
       .sidebarLogoText {
         font-size: 28px;
         font-weight: bold;
-        color: #f4f4f4;
+        
+        /* Use the same logotext.webp for gradient effect */
+        background: url('/logotext.webp');
+        background-size: contain;
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
       }
+
+      
       
       /* Profile Section */
       .sidebarProfileContainer {
@@ -105,7 +102,7 @@
       
       .sidebarWelcomeText {
         font-size: 16px;
-        color: #ccc;
+        color: rgba(255, 255, 255, 0.85);
       }
       
       .sidebarAvatar {
@@ -113,11 +110,6 @@
         height: 60px;
         border-radius: 50%;
         margin-top: 10px;
-      }
-      
-      /* Navigation Section */
-      .sidebarNavContainer {
-        flex-grow: 1;
       }
       
     /* =======================
@@ -136,7 +128,7 @@
       }
       
       .sidebarNavLink {
-        color: #ffffff;
+        color: #FFFFFF;
         text-decoration: none;
         font-size: 16px;
         display: block;
@@ -149,22 +141,30 @@
       }
       
       .sidebarNavLink:hover {
-        background-color: #899878;
+        background-color: rgba(255, 255, 255, 0.1);
         color: #f7f7f2;
+        border-left: 4px solid #E76F51;
+        text-shadow: 0px 0px 5px rgba(255, 255, 255, 0.3);
       }
+      
+      
       
       /* Logout Button Section */
       
+      .sidebarNavContainer {
+        flex-grow: 1; /* Pushes logout button down */
+      }
+      
       .sidebarLogoutButton {
-       background-color: #c44536;
-       color: #fff;
-       border: none;
-       padding: 10px 15px;
-       width: 100%;
-       border-radius: 4px;
-       cursor: pointer;
-       transition: background-color 0.2s ease;
-     }
+        background-color: #E76F51;
+        color: #fff;
+        border: none;
+        padding: 10px 15px;
+        width: 100%;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+      }
       
       .sidebarLogoutButton:hover {
         background-color: #a13328;
@@ -175,8 +175,6 @@
          ======================= */
          .content {
            grid-area: content; /* Ensure it's placed in the correct grid area */
-           background-color: #f7f7f2;
-           padding: 10px;
            color: #000;
            width: 100%;
            height: 100%; /* Fill the available height */

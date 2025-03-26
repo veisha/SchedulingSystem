@@ -6,8 +6,7 @@
    .calendarContainer {
     width: 100%;
     height: 100%;
-    padding: 1.25rem;           /* 20px */
-    background-color: white;     /* Change to desired bg color */
+    background-color: #F5F5F5;     /* Change to desired bg color */
     box-sizing: border-box;
     overflow-y: auto; /* Enable scrolling within the calendar container */
   }
@@ -115,57 +114,61 @@
     padding: 0 1rem; /* Add padding to prevent text from touching buttons */
   }
 
-/* Time and Events Columns Container */
-.dayViewColumns {
-  display: flex; /* Align timeColumn and eventsColumn side by side */
-  flex-grow: 1;
-}
+  /* Time and Events Columns Container */
+  .dayViewColumns {
+    display: flex; /* Align timeColumn and eventsColumn side by side */
+    flex-grow: 1;
+  }
 
-.timeColumn {
-  width: 5rem; /* 80px */
-}
+  .timeColumn {
+    width: 5rem; /* 80px */
+    border: none;
+  }
 
-.timeSlot {
-  height: 2.5rem; /* 40px */
-  border-bottom: 0.0625rem solid rgb(188, 188, 188); /* 1px */
-  text-align: right;
-  padding-right: 0.3125rem; /* 5px */
-  font-size: 0.75rem; /* 12px */
-  color: black;
-}
+  .timeSlot {
+    height: 2.5rem; /* 40px */
+    border-bottom: 0.0625rem solid #BDBDBD; /* 1px */
+    border-right: 0.0625rem solid #BDBDBD; /* 1px */
+    text-align: right;
+    padding-right: 0.3125rem; /* 5px */
+    font-size: 0.75rem; /* 12px */
+    color: #2C3E50;
+    background-color: #F5F5F5;
+  }
 
-.eventsColumn {
-  flex-grow: 1;
-  border-left: 0.0625rem solid rgb(188, 188, 188);
-}
+  .eventsColumn {
+    flex-grow: 1;
+    background: transparent;
+    border: none;
+  }
 
-.eventSlot {
-  height: 2.5rem; /* 40px */
-  border-bottom: 0.0625rem solid rgb(188, 188, 188);
-}
+  .eventSlot {
+    height: 2.5rem; /* 40px */
+    border-bottom: 0.0625rem solid #BDBDBD;
+    border-left: none;
+    background: transparent;
+  }
 
-.currentTime {
-  background-color: #ffeb3b30;
-  position: relative;
-  border: 2px solid #ffeb3b;
-  font-weight: bold;
-}
+  .currentTime {
+    position: relative;
+    border: 1px solid #FFF9C4;
+    font-weight: bold;
+  }
 
-.currentTimeMarker {
-  position: absolute;
-  left: 0;
-  top: 50%;
-  width: 100%;
-  height: 2px;
-  background: #ffeb3b;
-  transform: translateY(-50%);
-  z-index: 1;
-}
+  .currentTimeMarker {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 100%;
+    height: 2px;
+    transform: translateY(-50%);
+    z-index: 1;
+  }
 
-.timeSlot.currentTime {
-  background-color: #fff3bf;
-  font-weight: bold;
-}
+  .timeSlot.currentTime {
+    background-color: #fff3bf;
+    font-weight: bold;
+  }
 
 /* ===============================
    WEEK VIEW
@@ -203,12 +206,12 @@
 
   .weekHeader {
     display: flex;
-    border-bottom: 0.0625rem solid rgb(188, 188, 188); /* 1px */
+    border-bottom: 0.0625rem solid #BDBDBD; /* 1px */
   }
   
   .timeColumnHeader {
     width: 5rem; /* 80px - Same as timeColumn */
-    border-right: 0.0625rem solid rgb(188, 188, 188); /* 1px - Match the border */
+    border-right: 0.0625rem solid #BDBDBD; /* 1px - Match the border */
     background-color: #f4f4f4; /* Match the header background */
   }
   
@@ -217,7 +220,7 @@
     min-width: 0; /* Allow text to truncate if necessary */
     text-align: center;
     padding: 0.5rem 0; /* 8px 0 */
-    border-right: 0.0625rem solid rgb(188, 188, 188); /* 1px - Add border between days */
+    border-right: 0.0625rem solid #BDBDBD; /* 1px - Add border between days */
     color: black;
     overflow: hidden; /* Prevent text from overflowing */
     white-space: nowrap; /* Keep text in a single line */
@@ -229,32 +232,15 @@
   }
 
   .currentCell {
-    background-color: #ffeb3b; /* Light blue background for the current cell */
     font-weight: bold; /* Bold text for the current cell */
   }
   
   .currentDay {
-    background-color: #ffeb3b; /* Yellow highlight */
     font-weight: bold;
   }
   
   .weekBody {
     display: flex;
-  }
-  
-  .timeColumn {
-    width: 5rem; /* 80px */
-    border-right: 0.0625rem solid rgb(188, 188, 188); /* 1px - Match the border */
-    background-color: #f4f4f4; /* Match the header background */
-  }
-  
-  .timeSlot {
-    height: 2.5rem; /* 40px */
-    border-bottom: 0.0625rem solid blrgb(188, 188, 188)ck; /* 1px */
-    text-align: right;
-    padding-right: 0.3125rem; /* 5px */
-    font-size: 0.75rem; /* 12px */
-    color: black;
   }
   
   .daysColumns {
@@ -265,7 +251,7 @@
   .dayColumn {
     flex: 1; /* Distribute space evenly */
     min-width: 0; /* Allow content to fit within the column */
-    border-right: 0.0625rem solid rgb(188, 188, 188); /* 1px - Add border between days */
+    border-right: 0.0625rem solid #BDBDBD; /* 1px - Add border between days */
   }
   
   .dayColumn:last-child {
@@ -274,7 +260,7 @@
   
   .dayColumn .eventSlot {
     height: 2.5rem; /* 40px */
-    border-bottom: 0.0625rem solid black; /* 1px */
+    border-bottom: 0.0625rem solid #BDBDBD; /* 1px */
   }
   
 /* ===============================
@@ -340,7 +326,6 @@
 }
 
 .currentDay {
-  background-color: #ffeb3b; /* Yellow highlight */
   font-weight: bold;
 }
   
@@ -418,7 +403,7 @@
   }
   
   .currentDay {
-    background-color: #ffeb3b; /* Yellow highlight */
+    background-color: #FFECB3; /* Yellow highlight used in the month and year*/ 
     font-weight: bold;
   }
 
@@ -546,22 +531,8 @@
 }
 
 .occupiedSlot {
-  background-color: rgba(100, 181, 246, 0.4); /* Light blue */
-  color: #c62828; /* Dark red text color for occupied slots */
+  background-color: #E57373; /* Light blue */
   pointer-events: none; /* Disable pointer events for occupied slots */
-}
-
-.eventSlot {
-  cursor: pointer;
-  border: 1px solid #ccc;
-}
-
-.currentTime {
-  background-color: rgba(255, 223, 0, 0.3);
-}
-
-.occupiedSlot {
-  background-color: rgba(255, 0, 0, 0.2);
 }
 
 .selectedSlot {
@@ -575,14 +546,14 @@
 }
 
 .pastSlot {
-  background-color: #d5d5d5; /* Light gray background for past slots */
+  background-color: #E0E0E0; /* Light gray background for past slots */
   color: #999; /* Dimmed text color for past slots */
   pointer-events: none; /* Disable pointer events for past slots */
   cursor: not-allowed;
 }
 
 .pastMonth{
-  color: #007bff;
+  color: #CFD8DC;
 }
 
 .errorMessage {
@@ -594,10 +565,8 @@
 }
 
 .currentTime {
-  background-color: yellow; /* Highlight the current time slot in yellow */
+  background-color: #FFECB3; /* Highlight the current time slot in yellow */
 }
-
-
 
 /*appointment pop over*/
 
