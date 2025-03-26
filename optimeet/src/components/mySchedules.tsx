@@ -50,7 +50,7 @@ export default function MySchedules() {
           throw new Error(apiError || "Failed to fetch schedules");
         }
 
-        let { schedules } = await response.json();
+        const { schedules } = await response.json();
         setSchedules(schedules);
       } catch (error) {
         setError(error instanceof Error ? error.message : "An unknown error occurred");
