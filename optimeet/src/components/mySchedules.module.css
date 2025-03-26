@@ -1,66 +1,261 @@
 .container {
-    padding: 20px;
-    background-color: #f9f9f9;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-  
-  .container h1 {
-    font-size: 24px;
-    margin-bottom: 16px;
-  }
-  
-  .container p {
-    font-size: 16px;
-    color: #666;
-  }.container {
-    padding: 20px;
-  }
-  
-  .noSchedules {
-    font-size: 1.2em;
-    color: #666;
-    text-align: center;
-    margin-top: 20px;
-  }
-  
-  .scheduleList {
-    list-style-type: none;
-    padding: 0;
-  }
-  
-  .scheduleItem {
-    background: #f9f9f9;
-    margin: 10px 0;
-    padding: 15px;
-    border-radius: 5px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-  
-  .scheduleItem h2 {
-    margin: 0 0 10px 0;
-    font-size: 1.5em;
-    color: #333;
-  }
-  
-  .scheduleItem p {
-    margin: 5px 0;
-    color: #555;
-  }
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
 
-  .shareButton {
-    padding: 10px 20px;
-    background-color: #0070f3;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-  }
-  
-  .shareableLink {
-    margin-top: 20px;
-    padding: 10px;
-    background-color: #f0f0f0;
-    border-radius: 5px;
-  }
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
 
+.buttonContainer {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* Space between buttons */
+}
+
+.sortButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  margin-bottom: 10px;
+}
+
+.sortButton img {
+  width: 24px;
+  height: 24px;
+}
+
+.sortButton:hover {
+  opacity: 0.8;
+  transform: scale(1.1);
+}
+
+.title {
+  color: #2c3e50;
+  font-size: 24px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.paragraph {
+  font-size: 16px;
+  color: #444;
+  line-height: 1.6;
+}
+
+.noSchedules {
+  font-size: 1.2em;
+  color: #999;
+  text-align: center;
+  margin-top: 20px;
+}
+
+.scheduleList {
+  list-style: none;
+  padding: 0;
+}
+
+/* Schedule Card */
+.scheduleItem {
+  background: #ffffff; /* Keep card background white */
+  margin: 15px 0;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  text-align: left;
+  position: relative;
+  border-left: 6px solid #3498db; /* Default border color */
+}
+
+.scheduleItem:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Status Badge */
+.statusBadge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: bold;
+  border-radius: 12px;
+  text-transform: uppercase;
+  background: none; /* Remove card-wide background effect */
+}
+
+/* Status Colors */
+.status-completed {
+  background: #d4edda;
+  color: #155724;
+  border-left-color: #28a745;
+}
+
+.status-upcoming {
+  background: #cce5ff;
+  color: #004085;
+  border-left-color: #007bff;
+}
+
+.status-canceled {
+  background: #f8d7da;
+  color: #721c24;
+  border-left-color: #dc3545;
+}
+
+.status-in-progress {
+  background: #fff3cd;
+  color: #856404;
+  border-left-color: #ffc107;
+}
+
+/* Title */
+.scheduleTitle {
+  font-size: 1.5em; /* Bigger title */
+  font-weight: bold;
+  color: #2c3e50;
+  margin-bottom: 4px;
+  text-transform: capitalize;
+}
+
+/* Description */
+.scheduleDescription {
+  font-size: 1em; /* Smaller than title */
+  color: #666; /* Lighter color */
+  font-style: italic;
+  margin-bottom: 8px;
+}
+
+/* Schedule Text (Date, Time, etc.) */
+.scheduleText {
+  margin: 4px 0;
+  color: #444;
+  font-size: 1em;
+  line-height: 1.5;
+}
+
+.scheduleText strong {
+  color: #333;
+}
+
+/* Styled Time Information */
+.timeInfo {
+  font-size: 0.95em;
+  color: #444;
+  margin-top: 8px;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  display: inline-block;
+}
+
+/* Schedule Status */
+.scheduleStatus {
+  font-weight: bold;
+  padding: 5px 10px;
+  border-radius: 5px;
+  display: inline-block;
+  text-transform: capitalize;
+}
+
+.completed {
+  background-color: #28a745;
+  color: white;
+}
+
+.upcoming {
+  background-color: #007bff;
+  color: white;
+}
+
+.canceled {
+  background-color: #dc3545;
+  color: white;
+}
+
+.in_progress {
+  background-color: #ffc107;
+  color: black;
+}
+
+/* Buttons */
+.shareButton {
+  padding: 10px 20px;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s ease-in-out;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+.shareButton:hover {
+  background-color: #217dbb;
+}
+
+.shareableLink {
+  margin-top: 15px;
+  padding: 12px;
+  background-color: #eef2ff;
+  border-radius: 6px;
+  word-break: break-word;
+  font-size: 14px;
+}
+
+/* Loading and Error Messages */
+.loadingMessage {
+  font-size: 18px;
+  color: #0070f3;
+  font-weight: bold;
+  text-align: center;
+}
+
+.errorMessage {
+  color: #e74c3c;
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.pageButton {
+  padding: 8px 16px;
+  margin: 0 5px;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s ease-in-out;
+  font-weight: bold;
+}
+
+.pageButton:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.pageInfo {
+  font-size: 16px;
+  font-weight: bold;
+  margin: 0 10px;
+}

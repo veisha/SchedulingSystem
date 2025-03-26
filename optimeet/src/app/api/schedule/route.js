@@ -55,7 +55,7 @@ export async function POST(request) {
           endDateTime,
           isAllDay,
           repeat,
-          status: 'CONFIRMED',
+          status: 'UPCOMING',
           userId,
         },
       ])
