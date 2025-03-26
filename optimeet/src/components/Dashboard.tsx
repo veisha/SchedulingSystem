@@ -180,11 +180,11 @@ export default function Dashboard() {
           ...schedule,
           startDateTime,
           endDateTime,
-          status: schedule.status,
           userId: schedule.userId,
           type: schedule.type,
           title: schedule.title,
           description: schedule["description"],
+          status: newStatus,
         };
       });
 
