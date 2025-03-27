@@ -421,12 +421,7 @@ const renderDayView = ({
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const currentHour = getCurrentHour();
 
-  const currentDay = currentDate.toLocaleString("default", { weekday: "long" });
-  const currentDateFormatted = currentDate.toLocaleString("default", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+
 
 
   // Filter schedules for the current day
