@@ -1,10 +1,12 @@
 .container {
-  max-width: 800px;
+  max-width: 100%;
   margin: 0 auto;
   padding: 20px;
-  background-color: #ffffff;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(
+    to bottom,
+    rgba(109,139,128, 0.05),
+    rgba(109,139,128, 0.00)
+  );
 }
 
 .header {
@@ -65,20 +67,20 @@
 
 /* Schedule Card */
 .scheduleItem {
-  background: #ffffff; /* Keep card background white */
+  background: #ffffff;
   margin: 15px 0;
   padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-  text-align: left;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(109, 139, 128, 0.1); /* Use sidebar color in shadow */
+  transition: all 0.2s ease;
   position: relative;
-  border-left: 6px solid #3498db; /* Default border color */
+  border-left: 6px solid #6D8B80; /* Updated color */
 }
 
+/* Add hover effect matching dashboard interactions */
 .scheduleItem:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(109, 139, 128, 0.15);
 }
 
 /* Status Badge */
@@ -201,7 +203,7 @@
 /* Buttons */
 .shareButton {
   padding: 10px 20px;
-  background-color: #3498db;
+  background-color: #80A190  ;
   color: white;
   border: none;
   border-radius: 6px;
@@ -212,7 +214,7 @@
 }
 
 .shareButton:hover {
-  background-color: #217dbb;
+  background-color: #6D8B80 ;
 }
 
 .shareableLink {
@@ -250,7 +252,7 @@
 .pageButton {
   padding: 8px 16px;
   margin: 0 5px;
-  background-color: #3498db;
+  background-color: #80A190  ;
   color: white;
   border: none;
   border-radius: 6px;
