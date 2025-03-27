@@ -98,33 +98,6 @@
   gap: 1rem;
 }
 
-.acceptButton,
-.rejectButton {
-  padding: 0.75rem 1.5rem;
-  border-radius: 6px;
-  border: none;
-  color: white;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.acceptButton {
-  background-color: #10b981;
-}
-
-.acceptButton:hover {
-  background-color: #059669;
-}
-
-.rejectButton {
-  background-color: #ef4444;
-}
-
-.rejectButton:hover {
-  background-color: #dc2626;
-}
-
 .buttonGroup button:disabled {
   opacity: 0.7;
   cursor: not-allowed;
@@ -163,23 +136,35 @@
   margin-top: 1rem;
 }
 
-.acceptButton {
-  background-color: #4caf50;
-  color: white;
-  padding: 0.5rem 1rem;
-  border: none;
+.acceptButton,
+.rejectButton {
+  padding: 0.5rem 1rem; /* Smaller padding */
+  font-size: 0.875rem; /* Reduced font size */
+  border-radius: 4px; /* Slightly less rounded */
+  font-weight: 500;
   cursor: pointer;
-  border-radius: 4px;
+  border: none;
+  transition: background-color 0.2s ease;
+}
+
+.acceptButton {
+  background-color: #6D8B80; /* Sidebar color */
+  color: white;
+}
+
+.acceptButton:hover {
+  background-color: #5A746B;
 }
 
 .rejectButton {
-  background-color: #f44336;
+  background-color: #E76F51; /* Logout button color */
   color: white;
-  padding: 0.5rem 1rem;
-  border: none;
-  cursor: pointer;
-  border-radius: 4px;
 }
+
+.rejectButton:hover {
+  background-color: #C55D44;
+}
+
 
 /*
 Popover
