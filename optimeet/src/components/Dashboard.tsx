@@ -258,33 +258,41 @@ export default function Dashboard() {
   const formatHeaderDisplay = () => {
     switch (calendarView) {
       case "day":
-        return currentDateTime.toLocaleDateString("en-US", {
-          weekday: "long",
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        });
+        return {
+          day: currentDateTime.toLocaleDateString("en-US", { weekday: "long" }),
+          year: currentDateTime.getFullYear().toString(),
+          monthDay: currentDateTime.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          }),
+        };
       case "week": {
         const startOfWeek = new Date(currentDateTime);
         startOfWeek.setDate(currentDateTime.getDate() - currentDateTime.getDay());
         const endOfWeek = new Date(startOfWeek);
         endOfWeek.setDate(startOfWeek.getDate() + 6);
-
-        return `${startOfWeek.toLocaleDateString()} - ${endOfWeek.toLocaleDateString()}`;
+  
+        return {
+          year: currentDateTime.getFullYear().toString(),
+          dayRange: `${startOfWeek.toLocaleDateString("en-US", { weekday: "short" })} - ${endOfWeek.toLocaleDateString("en-US", { weekday: "short" })}`,
+          monthDayRange: `${startOfWeek.toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${endOfWeek.toLocaleDateString("en-US", { day: "numeric" })}`
+        };
       }
       case "month":
-        return currentDateTime.toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "long",
-        });
+        return {
+          year: currentDateTime.getFullYear().toString(),
+          month: currentDateTime.toLocaleDateString("en-US", { month: "long" })
+        };
       case "year":
-        return currentDateTime.toLocaleDateString("en-US", {
-          year: "numeric",
-        });
+        return {
+          year: currentDateTime.getFullYear().toString()
+        };
       default:
-        return currentDateTime.toLocaleString();
+        return { full: currentDateTime.toLocaleString() };
     }
   };
+  
+  const formattedHeader = formatHeaderDisplay(); // Ensure it returns an object
 
   return (
     <div ref={containerRef} className={`${styles.container}`}>
@@ -299,9 +307,33 @@ export default function Dashboard() {
 
       {/* Header */}
       <div ref={headerRef} className={styles.header}>
-        <div>{formatHeaderDisplay()}</div>
+        <div className={styles.headerDisplay}>
+          {calendarView === "day" ? (
+            <div className={`${styles.dayFormattedDate}`}>
+              <div className={styles.year}>{formattedHeader.year}</div>
+              <div className={styles.day}>{formattedHeader.day}</div>
+              <div className={styles.monthDay}>{formattedHeader.monthDay}</div>
+            </div>
+          ) : calendarView === "week" ? (
+            <div className={`${styles.dayFormattedDate} ${styles.weekFormattedDate}`}>
+              <div className={styles.year}>{formattedHeader.year}</div>
+              <div className={styles.dayRange}>{formattedHeader.dayRange}</div>
+              <div className={styles.monthDayRange}>{formattedHeader.monthDayRange}</div>
+            </div>
+          ) : calendarView === "month" ? (
+            <div className={`${styles.dayFormattedDate} ${styles.monthFormattedDate}`}>
+              <div className={styles.year}>{formattedHeader.year}</div>
+              <div className={styles.monthName}>{formattedHeader.month}</div>
+            </div>
+          ) : calendarView === "year" ? (
+            <div className={styles.yearFormattedDate}>
+              <div className={styles.year}>{formattedHeader.year}</div>
+            </div>
+          ) : (
+            <div>{formattedHeader.full}</div>
+          )}
+        </div>
       </div>
-
       {/* Sidebar */}
       <aside ref={sidebarRef} className={styles.sidebar}>
         <div className={styles.sidebarLogoContainer}>

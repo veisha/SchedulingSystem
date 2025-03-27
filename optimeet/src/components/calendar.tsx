@@ -611,10 +611,6 @@ const schedulesForTheDay = schedules.filter((schedule) => {
           </button>
         </div>
 
-        <div>
-          <h2>{currentDay}</h2>
-          <p>{currentDateFormatted}</p>
-        </div>
 
         <div className={styles.viewSelector}>
           <select
@@ -1158,14 +1154,7 @@ const isCurrentTimeSlot = (dayIndex: number, hour: number) => {
           </button>
         </div>
 
-        <h2>
-          {startOfWeek.toLocaleDateString("default", { month: "short", day: "numeric" })} - {" "}
-          {new Date(startOfWeek.getTime() + 6 * 86400000).toLocaleDateString("default", { 
-            month: "short", 
-            day: "numeric" 
-          })}
-        </h2>
-
+        
         <div className={styles.viewSelector}>
           <select
             className={styles.viewDropdown}
@@ -1560,11 +1549,6 @@ const renderMonthView = ({
       </button>
     </div>
 
-    {/* Month and Year (Centered) */}
-    <h2>
-      {currentDate.toLocaleString("default", { month: "long" })} {currentDate.getFullYear()}
-    </h2>
-
     {/* Dropdown for View Selection (Right Side) */}
     <div className={styles.viewSelector}>
       <select
@@ -1707,9 +1691,6 @@ const renderYearView = ({
               />
             </button>
           </div>
-
-          {/* Year (Centered) */}
-          <h2>{year}</h2>
 
           {/* Dropdown for View Selection (Right Side) */}
           <div className={styles.viewSelector}>
