@@ -138,7 +138,7 @@ export default function MySchedules() {
                   {/* Schedule Details */}
                     <h2 className={styles.scheduleTitle}>{schedule.title}</h2>
                     <p className={styles.scheduleType}>{schedule.type}</p> {/* Add this line */}
-                    <p className={styles.scheduleText}>{schedule.description}</p>
+                    <p className={styles.scheduleDescription}>{schedule.description}</p>
 
 
                   <p className={styles.scheduleText}>

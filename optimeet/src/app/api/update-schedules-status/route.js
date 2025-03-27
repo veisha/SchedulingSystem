@@ -30,7 +30,7 @@ export async function POST(request) {
       return NextResponse.json({ error: "Failed to authenticate user" }, { status: 401 });
     }
 
-    console.log("🟢 Authenticated user:", user);
+    // console.log("🟢 Authenticated user:", user);
 
     const body = await request.json();
     const { schedules } = body;
@@ -40,15 +40,19 @@ export async function POST(request) {
       return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
     }
 
-    // ✅ Filter schedules to update only those that belong to the authenticated user
-    const updates = schedules
-      .filter((schedule) => schedule.userId === user.user.id)
-      .map((schedule) => ({
-        id: schedule.id,
-        status: schedule.newStatus,
-      }));
+    console.log("🟢 Schedules to update:", schedules);
 
+    const updates = schedules.map((schedule) => ({
+      id: schedule.id,
+      status: schedule.status,
+    }));
+    
+    updates.forEach(update =>
+      console.log(`🔄 Schedule ${update.id} will be updated to status: ${update.status}`)
+    );
+    
     console.log("🔄 Updating schedules in Supabase:", updates);
+    
 
     if (updates.length === 0) {
       return NextResponse.json({ message: "No schedules to update for this user" }, { status: 200 });

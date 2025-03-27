@@ -143,17 +143,18 @@ export default function Dashboard() {
 
   const fetchSchedules = useCallback(async () => {
     if (!user) return;
-
+  
     try {
       const response = await fetch(`/api/schedules-by-user-id?userId=${user.id}`);
       if (!response.ok) {
         console.error("Failed to fetch schedules");
         return;
       }
-
+  
       const { schedules: fetchedSchedules } = await response.json();
       const currentTime = new Date();
 
+  
       interface FetchedSchedule {
         id: string;
         type: string;
@@ -164,67 +165,80 @@ export default function Dashboard() {
         status: "UPCOMING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
         description?: string;
       }
-
-      const updatedSchedules: Schedule[] = fetchedSchedules.map((schedule: FetchedSchedule) => {
-        const startDateTime = new Date(schedule.startDateTime);
-        const endDateTime = new Date(schedule.endDateTime);
-
-        const newStatus: "COMPLETED" | "IN_PROGRESS" | "UPCOMING" =
+  
+      // Map schedules while capturing the original status.
+      const updatedSchedules: (Schedule & { originalStatus: FetchedSchedule["status"] })[] =
+        fetchedSchedules.map((schedule: FetchedSchedule) => {
+          const startDateTime = new Date(schedule.startDateTime);
+          const endDateTime = new Date(schedule.endDateTime);
+  
+          const originalStatus = schedule.status;
+          const newStatus: "COMPLETED" | "IN_PROGRESS" | "UPCOMING" =
           currentTime > endDateTime
-            ? "COMPLETED"
-            : currentTime >= startDateTime
-            ? "IN_PROGRESS"
-            : "UPCOMING";
-
-        return {
-          ...schedule,
-          startDateTime,
-          endDateTime,
-          userId: schedule.userId,
-          type: schedule.type,
-          title: schedule.title,
-          description: schedule["description"],
-          status: newStatus,
-        };
-      });
-
+              ? "COMPLETED"
+              : currentTime >= startDateTime
+              ? "IN_PROGRESS"
+              : "UPCOMING";
+  
+          if (originalStatus !== newStatus) {
+            console.log(
+              `Schedule ${schedule.id} status changing from ${originalStatus} to ${newStatus}`
+            );
+          }
+  
+          return {
+            ...schedule,
+            startDateTime,
+            endDateTime,
+            status: newStatus,
+            originalStatus,
+          };
+        });
+  
       setSchedules(updatedSchedules);
       console.log("✅ Schedules fetched, converted, & statuses updated:", updatedSchedules);
-
+  
+      // Filter out only schedules where the original status is different from the new status.
       const schedulesToUpdate = updatedSchedules.filter(
-        (schedule) => schedule.status !== schedule.status
+        (schedule) => schedule.originalStatus !== schedule.status
       );
-
+  
       if (schedulesToUpdate.length > 0) {
-        console.log("🔄 Updating statuses in Supabase:", schedulesToUpdate);
-
+        console.log("🔄 Updating statuses in Supabase for schedules:", schedulesToUpdate);
+  
         const { data: sessionData } = await supabase.auth.getSession();
         const accessToken = sessionData?.session?.access_token;
-
+  
         if (!accessToken) {
           console.error("❌ No access token found. User may not be authenticated.");
           return;
         }
-
+  
         const updateResponse = await fetch("/api/update-schedules-status", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${accessToken}`,
           },
-          body: JSON.stringify({ schedules: schedulesToUpdate }),
+          body: JSON.stringify({
+            schedules: schedulesToUpdate.map(({ id, status }) => ({ id, status })),
+          }),
         });
-
+  
         if (!updateResponse.ok) {
           console.error("❌ Failed to update schedule statuses in Supabase");
         } else {
           console.log("✅ Schedule statuses successfully updated in Supabase");
         }
+      } else {
+        console.log("No schedule statuses needed updating.");
       }
     } catch (error) {
       console.error("Error fetching/updating schedules:", error);
     }
   }, [user]);
+  
+  
 
   useEffect(() => {
     if (user) {
