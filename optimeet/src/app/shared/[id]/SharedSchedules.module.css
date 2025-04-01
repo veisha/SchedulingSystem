@@ -78,3 +78,160 @@
   font-weight: bold;
   color: black;
 }
+
+/* Header Styles */
+.header { 
+  background-color: #DDE5D0 ;
+  color: #2C3E50;
+  padding: 10px;
+  text-align: center;
+  font-size: 24px;
+  font-weight: bold;
+  position: relative; /* Needed for button positioning */
+  max-height: 56px;
+}
+/* Base formatted date container */
+.dayFormattedDate {
+  display: grid;
+  grid-template-areas:
+    "year day"
+    "year monthDay";
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: min-content min-content; /* Explicit row sizing */
+  align-items: start;
+  height: min-content; /* Contain height to content */
+  width: fit-content;
+}
+
+/* Day View */
+.dayFormattedDate {
+  grid-template-areas:
+    "year day"
+    "year monthDay";
+}
+
+/* Week View */
+.weekFormattedDate {
+  grid-template-areas:
+    "year dayRange"
+    "year monthDayRange";
+}
+
+/* Month View */
+.monthFormattedDate {
+  grid-template-areas: "year month";
+  grid-template-columns: auto 1fr;
+  align-items: center;
+}
+
+/* Year View */
+.yearFormattedDate {
+  display: flex;
+}
+
+/* Shared Year Styles */
+.year {
+  grid-area: year;
+  writing-mode: vertical-lr;
+  transform: rotate(180deg);
+  font-size: 18px;
+  padding: 0 0.25rem;
+  /* Remove height: 100% */
+  align-self: center; /* Align to top */
+  justify-self: center; /* Center horizontally */
+  padding-left: 0;
+}
+
+/* Day View Elements */
+.day {
+  align-self: stretch; /* Fill grid cell height */
+  align-items: center; /* Vertical center */
+  line-height: 1; /* Remove default line spacing */
+  grid-area: day;
+  font-size: 20px;
+}
+
+.monthDay {
+  align-self: end; /* Pushes content to bottom of grid cell */
+  align-items: center; /* Vertical center */
+  line-height: 1; /* Remove default line spacing */
+  grid-area: monthDay;
+  font-size: 14px;
+  text-align: start;
+}
+
+/* Week View Elements */
+.dayRange {
+  align-self: stretch; /* Fill grid cell height */
+  align-items: center; /* Vertical center */
+  line-height: 1; /* Remove default line spacing */
+  grid-area: dayRange;
+  font-size: 20px;
+}
+
+.monthDayRange {
+  align-self: end; /* Pushes content to bottom of grid cell */
+  align-items: center; /* Vertical center */
+  line-height: 1; /* Remove default line spacing */
+  grid-area: monthDayRange;
+  font-size: 12px;
+  text-align: start;
+}
+
+/* Month View Elements */
+.monthName {
+  align-self: stretch; /* Fill grid cell height */
+  align-items: center; /* Vertical center */
+  line-height: 1; /* Remove default line spacing */
+  grid-area: month;
+  font-size: 20px;
+}
+
+/* Header Container */
+/* Header Layout */
+.headerDisplay {
+  display: flex;
+  justify-content: space-between;
+  /* align-items: center; */
+}
+
+.headerDateSection {
+  flex: 1;
+  min-width: 200px;
+  align-self: flex-start;
+}
+
+/* User Info in Header */
+.headerUserInfo {
+  text-align: right;
+  margin-left: 20px;
+  align-self: flex-end;
+}
+
+.userName {
+  font-size: 18px;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.userEmail {
+  font-size: 12px;
+  color: #666;
+  margin: 2px 0 0 0;
+  font-weight: 400;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .year {
+    font-size: 16px;
+  }
+  
+  .day, .dayRange, .monthName {
+    font-size: 18px;
+  }
+  
+  .monthDay, .monthDayRange {
+    font-size: 11px;
+  }
+}

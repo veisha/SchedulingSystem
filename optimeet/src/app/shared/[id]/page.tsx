@@ -40,6 +40,48 @@ export default function SharedSchedulesPage() {
   const [calendarView, setCalendarView] = useState<"day" | "week" | "month" | "year">("month");
   const [user, setUser] = useState<User | null>(null);
   const [senderId, setSenderId] = useState<string | null>(null);
+  const [currentDateTime, setCurrentDateTime] = useState<Date>(new Date());
+
+  const updateDateTime = (dateTime: Date) => {
+    setCurrentDateTime(dateTime);
+  };
+
+  const formatHeaderDisplay = () => {
+    switch (calendarView) {
+      case "day":
+        return {
+          day: currentDateTime.toLocaleDateString("en-US", { weekday: "long" }),
+          year: currentDateTime.getFullYear().toString(),
+          monthDay: currentDateTime.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          }),
+        };
+      case "week": {
+        const startOfWeek = new Date(currentDateTime);
+        startOfWeek.setDate(currentDateTime.getDate() - currentDateTime.getDay());
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+      
+        return {
+          year: currentDateTime.getFullYear().toString(),
+          dayRange: `${startOfWeek.toLocaleDateString("en-US", { weekday: "short" })} - ${endOfWeek.toLocaleDateString("en-US", { weekday: "short" })}`,
+          monthDayRange: `${startOfWeek.toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${endOfWeek.toLocaleDateString("en-US", { day: "numeric" })}`
+        };
+      }
+      case "month":
+        return {
+          year: currentDateTime.getFullYear().toString(),
+          month: currentDateTime.toLocaleDateString("en-US", { month: "long" })
+        };
+      case "year":
+        return { year: currentDateTime.getFullYear().toString() };
+      default:
+        return { full: currentDateTime.toLocaleString() };
+    }
+  };
+
+  const formattedHeader = formatHeaderDisplay();
 
   useEffect(() => {
     const fetchSenderId = async () => {
@@ -58,20 +100,17 @@ export default function SharedSchedulesPage() {
           return;
         }
 
-        // Fetch schedules
         const response = await fetch(`/api/schedules-by-user-id?userId=${id}`);
         if (!response.ok) throw new Error("Failed to fetch schedules.");
         
         let { schedules } = await response.json();
-        // page.tsx - In fetchSharedSchedules function
         schedules = schedules.map((s: Schedule) => ({
           ...s,
-          startDateTime: new Date(s.startDateTime), // Remove + "Z"
-          endDateTime: new Date(s.endDateTime),     // Remove + "Z"
+          startDateTime: new Date(s.startDateTime),
+          endDateTime: new Date(s.endDateTime),
         }));
         setSchedules(schedules);
 
-        // Fetch user info
         const userResponse = await fetch(`/api/user-info?userId=${id}`);
         if (!userResponse.ok) throw new Error("Failed to fetch user info.");
         
@@ -101,7 +140,6 @@ export default function SharedSchedulesPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("No active session");
 
-      // Convert to backend-compatible format
       const backendProposedTimes = proposedTimes.map(t => [t.start, t.end]);
 
       const response = await fetch("/api/appointment-requests/create", {
@@ -150,16 +188,51 @@ export default function SharedSchedulesPage() {
 
   return (
     <div className={styles.container}>
-      {user && (
-        <div className={styles.userInfo}>
-          <h2>{`${user.name}'s Schedule`}</h2>
-          <p>Email: {user.email}</p>
+      {/* Header Section */}
+      <div className={styles.header}>
+        <div className={styles.headerDisplay}>
+          {/* Date Section */}
+          <div className={styles.headerDateSection}>
+            {calendarView === "day" ? (
+              <div className={styles.dayFormattedDate}>
+                <div className={styles.year}>{formattedHeader.year}</div>
+                <div className={styles.day}>{formattedHeader.day}</div>
+                <div className={styles.monthDay}>{formattedHeader.monthDay}</div>
+              </div>
+            ) : calendarView === "week" ? (
+              <div className={`${styles.dayFormattedDate} ${styles.weekFormattedDate}`}>
+                <div className={styles.year}>{formattedHeader.year}</div>
+                <div className={styles.dayRange}>{formattedHeader.dayRange}</div>
+                <div className={styles.monthDayRange}>{formattedHeader.monthDayRange}</div>
+              </div>
+            ) : calendarView === "month" ? (
+              <div className={`${styles.dayFormattedDate} ${styles.monthFormattedDate}`}>
+                <div className={styles.year}>{formattedHeader.year}</div>
+                <div className={styles.monthName}>{formattedHeader.month}</div>
+              </div>
+            ) : calendarView === "year" ? (
+              <div className={styles.yearFormattedDate}>
+                <div className={styles.year}>{formattedHeader.year}</div>
+              </div>
+            ) : (
+              <div>{formattedHeader.full}</div>
+            )}
+          </div>
+  
+          {/* User Info Section */}
+          {user && (
+            <div className={styles.headerUserInfo}>
+              <h2 className={styles.userName}>{`${user.name}'s Schedule`}</h2>
+              <p className={styles.userEmail}>{user.email}</p>
+            </div>
+          )}
         </div>
-      )}
-
+      </div>
+  
+      {/* Calendar Section */}
       <Calendar
         schedules={schedules}
-        updateDateTime={() => {}}
+        updateDateTime={updateDateTime}
         view={calendarView}
         setView={setCalendarView}
         isReadOnly={true}
